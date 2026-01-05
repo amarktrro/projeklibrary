@@ -20,13 +20,11 @@ export default function DashboardPage() {
       
       {/* --- TOP NAVBAR --- */}
       <nav className="bg-[#1e293b] text-white h-16 flex items-center justify-between px-6 shadow-md fixed w-full z-10">
-        {/* Logo Area */}
         <div className="flex items-center gap-3">
           <FaGraduationCap className="text-3xl" />
           <h1 className="text-xl font-bold tracking-wide">SIMPES JTIK</h1>
         </div>
 
-        {/* Right Side: User & Logout */}
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
             <FaUser className="text-sm" />
@@ -54,15 +52,18 @@ export default function DashboardPage() {
                   <span className="font-medium">Dashboard</span>
                 </Link>
               </li>
-              {/* Other Links */}
+              
+              {/* Cari Buku Link */}
               <li>
-                <Link href="#" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
+                <Link href="/dashboard/cari-buku" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
                   <FaSearch />
                   <span className="font-medium">Cari Buku</span>
                 </Link>
               </li>
+
+              {/* Informasi Link */}
               <li>
-                <Link href="#" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
+                <Link href="/dashboard/informasi" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
                   <FaInfoCircle />
                   <span className="font-medium">Informasi</span>
                 </Link>
@@ -81,7 +82,7 @@ export default function DashboardPage() {
 
           {/* --- STATS CARDS --- */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {/* Card 1 */}
+            {/* Sedang Dipinjam Card */}
             <div className="bg-white p-6 rounded-xl shadow-sm flex items-center gap-5 border border-gray-100">
               <div className="bg-[#1e293b] p-4 rounded-lg text-white text-2xl">
                 <FaBook />
@@ -92,7 +93,7 @@ export default function DashboardPage() {
               </div>
             </div>
             
-            {/* Card 2 */}
+            {/* Total Peminjaman Card */}
             <div className="bg-white p-6 rounded-xl shadow-sm flex items-center gap-5 border border-gray-100">
               <div className="bg-orange-500 p-4 rounded-lg text-white text-2xl">
                 <FaHistory />
@@ -103,7 +104,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Card 3 */}
+            {/* Denda Aktif Card */}
             <div className="bg-white p-6 rounded-xl shadow-sm flex items-center gap-5 border border-gray-100">
               <div className="bg-[#a3e635] p-4 rounded-lg text-white text-2xl">
                 <FaCheckCircle />
@@ -137,7 +138,7 @@ export default function DashboardPage() {
                     <td className="py-4">10/01/2025</td>
                     <td className="py-4">15/01/2025</td>
                     <td className="py-4 text-right">
-                      <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">Aktif</span>
+                      <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase">Aktif</span>
                     </td>
                   </tr>
                   <tr>
@@ -145,7 +146,7 @@ export default function DashboardPage() {
                     <td className="py-4">12/01/2025</td>
                     <td className="py-4">17/01/2025</td>
                     <td className="py-4 text-right">
-                      <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">Aktif</span>
+                      <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase">Aktif</span>
                     </td>
                   </tr>
                 </tbody>
@@ -175,7 +176,7 @@ export default function DashboardPage() {
                     <td className="py-4">01/12/2024</td>
                     <td className="py-4">06/12/2024</td>
                     <td className="py-4 text-right">
-                      <span className="bg-gray-200 text-gray-600 px-3 py-1 rounded-full text-xs font-bold">Selesai</span>
+                      <span className="bg-gray-200 text-gray-600 px-3 py-1 rounded-full text-xs font-bold uppercase">Selesai</span>
                     </td>
                   </tr>
                   <tr>
@@ -183,7 +184,7 @@ export default function DashboardPage() {
                     <td className="py-4">15/11/2024</td>
                     <td className="py-4">20/11/2024</td>
                     <td className="py-4 text-right">
-                      <span className="bg-gray-200 text-gray-600 px-3 py-1 rounded-full text-xs font-bold">Selesai</span>
+                      <span className="bg-gray-200 text-gray-600 px-3 py-1 rounded-full text-xs font-bold uppercase">Selesai</span>
                     </td>
                   </tr>
                 </tbody>
