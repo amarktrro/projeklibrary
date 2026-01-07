@@ -81,7 +81,7 @@ export default function LoginPage() {
 
             {/* --- UPDATED BUTTON SECTION START --- */}
             {/* Wrapped in Link to redirect to Dashboard */}
-            <Link href="/dashboard" className="w-full block mt-6">
+            <Link href="/user\dashboard" className="w-full block mt-6">
               <button 
                 type="button" 
                 className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg transform active:scale-95"

@@ -49,19 +49,19 @@ export default function InformasiPage() {
           <div className="py-6">
             <ul className="space-y-1">
               <li>
-                <Link href="/dashboard" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
+                <Link href="/user\dashboard" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
                   <FaHome />
                   <span className="font-medium">Dashboard</span>
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard/cari-buku" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
+                <Link href="/user\dashboard/cari-buku" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
                   <FaSearch />
                   <span className="font-medium">Cari Buku</span>
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard/informasi" className="flex items-center gap-3 px-6 py-3 bg-[#1e293b] text-white border-l-4 border-orange-500">
+                <Link href="/user\dashboard/informasi" className="flex items-center gap-3 px-6 py-3 bg-[#1e293b] text-white border-l-4 border-orange-500">
                   <FaInfoCircle />
                   <span className="font-medium">Informasi</span>
                 </Link>
