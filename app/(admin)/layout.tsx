@@ -3,31 +3,26 @@
 import React from "react";
 import Sidebar from "@/components/admin/Sidebar";
 import TopNav from "@/components/admin/TopNav";
-import { usePathname } from "next/navigation";
-import "@/app/globals.css";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-
-  // Define the login path to hide sidebar
-  const isLoginPage = pathname === "/admin-login";
-
-  if (isLoginPage) {
-    return <div className="min-h-screen bg-[#1a2e5a]">{children}</div>;
-  }
-
   return (
-    <div className="flex min-h-screen bg-[#f8fafc]">
-      {/* Sidebar is rendered HERE ONLY */}
-      <aside className="w-72 bg-[#1a2e5a] fixed h-full z-40 shadow-2xl">
-        <Sidebar />
-      </aside>
-
-      {/* Content Area - Offset by Sidebar Width (ml-72) */}
-      <div className="flex-1 ml-72 flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-[#f1f5f9]">
+      {/* Top Navbar - Fixed at the top with Slate Navy */}
+      <div className="fixed top-0 w-full z-50">
         <TopNav />
-        <main className="p-10 flex-1 bg-white rounded-tl-[3rem] shadow-inner mt-4">
-          {children}
+      </div>
+
+      <div className="flex flex-1 pt-16 min-h-screen">
+        {/* Sidebar - Fixed to the left with White background */}
+        <aside className="w-72 fixed h-[calc(100vh-64px)] z-40 bg-white border-r border-slate-100">
+          <Sidebar />
+        </aside>
+
+        {/* Main Content Area - This is where your page.tsx code appears */}
+        <main className="flex-1 ml-72 p-10">
+          <div className="bg-white rounded-[3.5rem] min-h-full shadow-sm border border-slate-100 p-12">
+            {children}
+          </div>
         </main>
       </div>
     </div>

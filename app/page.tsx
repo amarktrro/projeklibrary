@@ -1,122 +1,120 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { 
-  FaUser, 
-  FaLock, 
-  FaSignInAlt, 
-  FaInfoCircle, 
-  FaEnvelope, 
-  FaInstagram, 
-  FaGraduationCap, 
-  FaUsers 
-} from 'react-icons/fa';
+import { User, Lock, Info, LogIn, Mail, Instagram } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
-export default function LoginPage() {
+export default function UserLoginPage() {
+  const router = useRouter();
+  const [loginRole, setLoginRole] = useState("Anggota/Mahasiswa");
+
+  // Automatically redirects if the user selects "Admin/Petugas" from the dropdown
+  useEffect(() => {
+    if (loginRole === "Admin/Petugas") {
+      router.push("/admin-login"); // Navigates to the admin-login folder
+    }
+  }, [loginRole, router]);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Redirects to the main user dashboard
+    router.push('/user/dashboard'); 
+  };
+
   return (
-    // Main Container with Gradient Background
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#ea580c] p-4 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#7c2d12] flex items-center justify-center p-4 font-sans">
       
-      {/* Centered Wrapper for both cards */}
-      <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16 max-w-5xl w-full justify-center">
-
-        {/* --- LEFT CARD: LOGIN FORM --- */}
-        <div className="bg-[#1e293b]/90 backdrop-blur-sm p-8 rounded-3xl shadow-2xl w-full max-w-md border border-white/5 text-white">
-          
-          {/* Header / Logo */}
-          <div className="flex flex-col items-center mb-8">
-            <div className="text-5xl text-white mb-2">
-              <FaGraduationCap /> {/* Placeholder for the custom book logo */}
-            </div>
-            <h1 className="text-3xl font-bold tracking-wider">SIMPES</h1>
-            <p className="text-sm text-gray-400 mt-1">Jurusan Teknik Informatika dan Komputer</p>
-          </div>
-
-          {/* Form */}
-          <form className="space-y-5">
-            
-            {/* NIM Input */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium mb-2 text-gray-200">
-                <FaUser className="text-xs" /> NIM
-              </label>
-              <input 
-                type="text" 
-                placeholder="Masukkan NIM" 
-                className="w-full bg-[#334155] border border-transparent focus:border-orange-500 focus:ring-0 text-white placeholder-gray-400 rounded-lg px-4 py-3 outline-none transition-all"
-              />
-            </div>
-
-            {/* Password Input */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium mb-2 text-gray-200">
-                <FaLock className="text-xs" /> Password
-              </label>
-              <input 
-                type="password" 
-                placeholder="Masukkan Password" 
-                className="w-full bg-[#334155] border border-transparent focus:border-orange-500 focus:ring-0 text-white placeholder-gray-400 rounded-lg px-4 py-3 outline-none transition-all"
-              />
-            </div>
-
-            {/* Login As Dropdown */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium mb-2 text-gray-200">
-                <FaUsers className="text-xs" /> Login Sebagai
-              </label>
-              <div className="relative">
-                <select className="w-full bg-[#334155] border border-transparent focus:border-orange-500 text-white rounded-lg px-4 py-3 outline-none appearance-none cursor-pointer">
-                  <option value="" disabled selected>Anggota/Mahasiswa</option>
-                  <option value="mahasiswa">Mahasiswa</option>
-                  <option value="dosen">Dosen</option>
-                  <option value="admin">Admin</option>
-                </select>
-                {/* Custom arrow for dropdown */}
-                <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400">
-                  <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
-                </div>
+      <div className="flex flex-col md:flex-row gap-8 items-center max-w-5xl w-full">
+        
+        {/* --- Login Card --- */}
+        <div className="bg-[#1e293b]/60 backdrop-blur-md p-10 rounded-2xl w-full max-w-md shadow-2xl border border-white/5">
+          <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <div className="relative w-16 h-16">
+                 {/* Graduation Cap Logo */}
+                 <svg viewBox="0 0 24 24" className="fill-white" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 3L1 9L12 15L21 10.09V17H23V9M5 13.18V17.18L12 21L19 17.18V13.18L12 17L5 13.18Z" />
+                 </svg>
+                 {/* Orange Status Dot */}
+                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full border-2 border-[#1e293b]"></div>
               </div>
             </div>
-
-            {/* --- UPDATED BUTTON SECTION START --- */}
-            {/* Wrapped in Link to redirect to Dashboard */}
-            <Link href="/user\dashboard" className="w-full block mt-6">
-              <button 
-                type="button" 
-                className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg transform active:scale-95"
-              >
-                <FaSignInAlt /> Login
-              </button>
-            </Link>
-            {/* --- UPDATED BUTTON SECTION END --- */}
-
-          </form>
-
-          {/* Footer Text */}
-          <div className="mt-6 text-center text-sm text-gray-400">
-            Belum punya akun? <Link href="/register" className="text-orange-400 hover:text-orange-300 font-medium">Daftar Sekarang</Link>
+            <h1 className="text-white text-3xl font-bold tracking-wider uppercase">SIMPES</h1>
+            <p className="text-gray-300 text-[10px] mt-1">Jurusan Teknik Informatika dan Komputer</p>
           </div>
-        </div>
 
-
-        {/* --- RIGHT CARD: LIBRARY INFO --- */}
-        <div className="bg-white/10 backdrop-blur-md p-8 rounded-3xl w-full max-w-sm border border-white/20 shadow-xl text-center flex flex-col items-center justify-center h-fit">
-          <div className="bg-white/20 p-3 rounded-full mb-4">
-            <FaInfoCircle className="text-3xl text-white" />
-          </div>
-          
-          <h2 className="text-xl font-bold text-white mb-6">Informasi Perpustakaan</h2>
-          
-          <div className="space-y-4 text-gray-200">
-            <div className="flex items-center gap-3 justify-center">
-              <FaEnvelope className="text-orange-400" />
-              <span className="text-sm">perpustakaanjtikunm@gmail.com</span>
+          <form onSubmit={handleLogin} className="space-y-5">
+            {/* NIM Field */}
+            <div className="space-y-1.5">
+              <label className="text-white text-xs font-medium flex items-center gap-2">
+                <User size={14} /> NIM
+              </label>
+              <input 
+                required 
+                type="text" 
+                placeholder="Masukkan NIM" 
+                className="w-full bg-[#334155]/80 border border-white/10 rounded-lg py-3 px-4 text-sm text-white placeholder:text-gray-400 focus:ring-2 focus:ring-orange-500 outline-none transition-all" 
+              />
             </div>
             
-            <div className="flex items-center gap-3 justify-center">
-              <FaInstagram className="text-orange-400" />
-              <span className="text-sm">@pustaka_jtik</span>
+            {/* Password Field */}
+            <div className="space-y-1.5">
+              <label className="text-white text-xs font-medium flex items-center gap-2">
+                <Lock size={14} /> Password
+              </label>
+              <input 
+                required 
+                type="password" 
+                placeholder="Masukkan Password" 
+                className="w-full bg-[#334155]/80 border border-white/10 rounded-lg py-3 px-4 text-sm text-white placeholder:text-gray-400 focus:ring-2 focus:ring-orange-500 outline-none transition-all" 
+              />
+            </div>
+
+            {/* Role Select - Identical to Admin Page */}
+            <div className="space-y-1.5">
+              <label className="text-white text-xs font-medium flex items-center gap-2">
+                <User size={14} /> Login Sebagai
+              </label>
+              <select 
+                value={loginRole}
+                onChange={(e) => setLoginRole(e.target.value)}
+                className="w-full bg-[#334155]/80 border border-white/10 rounded-lg py-3 px-4 text-sm text-white outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer"
+              >
+                <option value="Anggota/Mahasiswa" className="bg-[#1e293b]">Anggota/Mahasiswa</option>
+                <option value="Admin/Petugas" className="bg-[#1e293b]">Admin/Petugas</option>
+              </select>
+            </div>
+
+            <button 
+              type="submit" 
+              className="w-full bg-[#ff4d2d] hover:bg-[#e63e1f] text-white py-3.5 rounded-lg font-bold text-sm shadow-lg transition-colors flex items-center justify-center gap-2"
+            >
+              <LogIn size={18} /> Login
+            </button>
+          </form>
+
+          <p className="text-center text-white text-xs mt-8">
+            Belum punya akun? <span className="text-orange-400 cursor-pointer font-semibold hover:underline" onClick={() => router.push('/register')}>Daftar Sekarang</span>
+          </p>
+        </div>
+
+        {/* --- Info Card (Right Side) --- */}
+        <div className="bg-[#ffffff]/10 backdrop-blur-md border border-white/10 p-10 rounded-2xl w-full max-w-sm text-white hidden md:block">
+          <div className="text-center mb-6">
+            <div className="bg-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-4">
+              <Info size={24} className="text-[#1e293b]" />
+            </div>
+            <h2 className="text-xl font-bold">Informasi Perpustakaan</h2>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-center gap-3 text-sm">
+              <Mail size={16} className="text-orange-500" />
+              <span className="text-gray-200">perpustakaanjtikunm@gmail.com</span>
+            </div>
+            <div className="flex items-center justify-center gap-3 text-sm">
+              <Instagram size={16} className="text-orange-500" />
+              <span className="text-gray-200">@pustaka_jtik</span>
             </div>
           </div>
         </div>

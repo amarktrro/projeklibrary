@@ -1,30 +1,41 @@
 "use client";
 
-import { LogOut, User } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import React from "react";
+import { GraduationCap, User, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-const TopNav = () => {
+export default function TopNav() {
   const router = useRouter();
 
-  return (
-    <header className="h-16 bg-[#1a2e5a] text-white sticky top-0 z-30 flex items-center justify-between px-8 shadow-md">
-      <div className="text-xs font-bold opacity-70 italic">Library Management System</div>
+  const handleLogout = () => {
+    router.push("/admin-login");
+  };
 
+  return (
+    <nav className="bg-[#1e293b] h-16 w-full flex items-center justify-between px-8 text-white shadow-md border-b border-white/5">
+      {/* Brand Section */}
+      <div className="flex items-center gap-3">
+        <GraduationCap size={28} className="text-white" />
+        <span className="text-xl font-black tracking-tighter">
+          SIMPES <span className="text-orange-500 italic">JTIK</span>
+        </span>
+      </div>
+
+      {/* User Actions Section */}
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-2">
-            <User size={16} />
-            <span className="text-xs font-bold uppercase tracking-tighter">Admin</span>
+          <User size={18} className="text-slate-300" />
+          <span className="text-sm font-medium">Ahmad Fajar</span>
         </div>
-        
+
         <button 
-          onClick={() => router.push('/admin-login')}
-          className="bg-[#ff5733] hover:bg-[#ff451a] text-white px-4 py-2 rounded-lg text-[10px] font-black flex items-center gap-2 transition-all"
+          onClick={handleLogout}
+          className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-sm active:scale-95"
         >
-          <LogOut size={14} /> LOGOUT
+          <LogOut size={16} />
+          Logout
         </button>
       </div>
-    </header>
+    </nav>
   );
-};
-
-export default TopNav;
+}
