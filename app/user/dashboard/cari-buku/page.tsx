@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   FaSearch, 
@@ -16,17 +16,37 @@ import {
   FaSignOutAlt
 } from 'react-icons/fa';
 
-// Mock data for the books shown in the image
-const books = [
-  { id: 'PWL-001', title: 'Pemrograman Web Lanjut', author: 'Dr. Ahmad Subagyo', category: 'Pemrograman', stock: 3, available: true },
-  { id: 'ASD-002', title: 'Algoritma dan Struktur Data', author: 'Prof. Siti Rahmawati', category: 'Pemrograman', stock: 5, available: true },
-  { id: 'JK-003', title: 'Jaringan Komputer', author: 'Dr. Budi Hartono', category: 'Jaringan', stock: 0, available: false },
-  { id: 'SBD-004', title: 'Sistem Basis Data', author: 'Dr. Dewi Kusuma', category: 'Database', stock: 2, available: true },
-  { id: 'SO-005', title: 'Sistem Operasi Modern', author: 'Prof. Andi Wijaya', category: 'Sistem Operasi', stock: 4, available: true },
-  { id: 'MM-006', title: 'Multimedia Interaktif', author: 'Dr. Rina Putri', category: 'Multimedia', stock: 6, available: true },
-];
-
 export default function CariBukuPage() {
+  // --- SYNC WITH ADMIN DATA ---
+  const [books, setBooks] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("Semua Kategori");
+
+  useEffect(() => {
+    // Connect to the same key used in Kelola Buku
+    const savedBooks = localStorage.getItem("simpes_inventory");
+    if (savedBooks) {
+      setBooks(JSON.parse(savedBooks));
+    }
+  }, []);
+
+  // --- FILTER LOGIC ---
+  const filteredBooks = books.filter(book => {
+    const matchesSearch = 
+      book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      book.id.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesCategory = 
+      selectedCategory === "Semua Kategori" || 
+      book.category === selectedCategory;
+
+    return matchesSearch && matchesCategory;
+  });
+
+  // Get unique categories for the dropdown
+  const categories = ["Semua Kategori", ...new Set(books.map(b => b.category))];
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       
@@ -56,19 +76,19 @@ export default function CariBukuPage() {
           <div className="py-6">
             <ul className="space-y-1">
               <li>
-                <Link href="/user/\dashboard" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
+                <Link href="/user/dashboard" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
                   <FaHome />
                   <span className="font-medium">Dashboard</span>
                 </Link>
               </li>
               <li>
-                <Link href="/user\dashboard/cari-buku" className="flex items-center gap-3 px-6 py-3 bg-[#1e293b] text-white border-l-4 border-orange-500">
+                <Link href="/user/dashboard/cari-buku" className="flex items-center gap-3 px-6 py-3 bg-[#1e293b] text-white border-l-4 border-orange-500">
                   <FaSearch />
                   <span className="font-medium">Cari Buku</span>
                 </Link>
               </li>
               <li>
-                <Link href="/user\dashboard/informasi" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
+                <Link href="/user/dashboard/informasi" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
                   <FaInfoCircle />
                   <span className="font-medium">Informasi</span>
                 </Link>
@@ -86,7 +106,7 @@ export default function CariBukuPage() {
               </div>
               <h2 className="text-2xl font-bold text-[#1e293b]">Daftar Buku</h2>
             </div>
-            <p className="text-sm text-gray-500">Cari dan pinjam buku yang tersedia</p>
+            <p className="text-sm text-gray-500">Total {filteredBooks.length} buku ditemukan</p>
           </div>
 
           {/* --- SEARCH & FILTER BAR --- */}
@@ -94,66 +114,77 @@ export default function CariBukuPage() {
             <div className="flex-1 relative">
               <input 
                 type="text" 
-                placeholder="Cari judul buku, penulis, atau kategori..." 
-                className="w-full pl-4 pr-12 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                placeholder="Cari judul buku, penulis, atau kode..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-4 pr-12 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none text-[#1e293b] font-medium"
               />
-              <button className="absolute right-2 top-1.5 bg-orange-500 text-white px-4 py-1 rounded-md flex items-center gap-2 hover:bg-orange-600 transition-colors">
-                <FaSearch className="text-sm" /> Cari
-              </button>
+              <div className="absolute right-4 top-3 text-gray-400">
+                <FaSearch />
+              </div>
             </div>
-            <select className="bg-white border border-gray-300 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-orange-500 min-w-[200px]">
-              <option>Semua Kategori</option>
-              <option>Pemrograman</option>
-              <option>Jaringan</option>
-              <option>Database</option>
+            <select 
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="bg-white border border-gray-300 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-orange-500 min-w-[200px] font-medium text-[#1e293b]"
+            >
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
             </select>
           </div>
 
           {/* --- BOOK GRID --- */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {books.map((book) => (
-              <div key={book.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
-                {/* Book Cover Placeholder */}
-                <div className="bg-[#c1d095] h-48 flex items-center justify-center m-4 rounded-xl">
-                  <FaBook className="text-6xl text-[#1e293b]" />
-                </div>
-                
-                {/* Book Details */}
-                <div className="px-6 pb-6 flex-1 flex flex-col">
-                  <h3 className="font-bold text-[#1e293b] text-lg mb-3">{book.title}</h3>
+            {filteredBooks.length > 0 ? (
+              filteredBooks.map((book) => (
+                <div key={book.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
+                  {/* Book Cover Placeholder */}
+                  <div className="bg-[#c1d095] h-48 flex items-center justify-center m-4 rounded-xl">
+                    <FaBook className="text-6xl text-[#1e293b]" />
+                  </div>
                   
-                  <div className="space-y-2 mb-4 text-sm text-gray-600">
-                    <div className="flex items-center gap-2">
-                      <FaUser className="text-xs text-gray-400" /> {book.author}
+                  {/* Book Details */}
+                  <div className="px-6 pb-6 flex-1 flex flex-col">
+                    <h3 className="font-bold text-[#1e293b] text-lg mb-3 line-clamp-2">{book.title}</h3>
+                    
+                    <div className="space-y-2 mb-4 text-sm text-gray-600">
+                      <div className="flex items-center gap-2">
+                        <FaUser className="text-xs text-gray-400" /> {book.author}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <FaTag className="text-xs text-gray-400" /> {book.category || 'Umum'}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <FaBookmark className="text-xs text-gray-400" /> Kode: {book.id}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <FaTag className="text-xs text-gray-400" /> {book.category}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <FaBookmark className="text-xs text-gray-400" /> Kode: {book.id}
-                    </div>
-                  </div>
 
-                  {/* Stock Status */}
-                  <div className="mb-4">
-                    <span className={`${book.available ? 'bg-green-600' : 'bg-red-600'} text-white text-xs px-3 py-1 rounded-full font-bold`}>
-                      Tersedia: {book.stock}
-                    </span>
-                  </div>
+                    {/* Stock Status */}
+                    <div className="mb-4">
+                      <span className={`${book.stock > 0 ? 'bg-green-600' : 'bg-red-600'} text-white text-xs px-3 py-1 rounded-full font-bold`}>
+                        {book.stock > 0 ? `Tersedia: ${book.stock}` : 'Stok Habis'}
+                      </span>
+                    </div>
 
-                  {/* Action Button */}
-                  {book.available ? (
-                    <button className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold transition-colors mt-auto">
-                      <FaHandHolding /> Pinjam Buku
-                    </button>
-                  ) : (
-                    <button disabled className="w-full bg-slate-400 text-white py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold cursor-not-allowed mt-auto">
-                      <FaBan /> Tidak Tersedia
-                    </button>
-                  )}
+                    {/* Action Button */}
+                    {book.stock > 0 ? (
+                      <button className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold transition-colors mt-auto">
+                        <FaHandHolding /> Pinjam Buku
+                      </button>
+                    ) : (
+                      <button disabled className="w-full bg-slate-400 text-white py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold cursor-not-allowed mt-auto">
+                        <FaBan /> Tidak Tersedia
+                      </button>
+                    )}
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div className="col-span-full py-20 text-center text-gray-400 font-bold">
+                Tidak ada buku yang sesuai dengan pencarian Anda.
               </div>
-            ))}
+            )}
           </div>
         </main>
       </div>
