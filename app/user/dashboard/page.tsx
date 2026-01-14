@@ -26,10 +26,14 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <FaUser className="text-sm" />
+          {/* REDIRECT TO PROFILE ON CLICK */}
+          <Link href="dashboard/profile" className="flex items-center gap-2 hover:text-orange-400 transition-colors cursor-pointer group">
+            <div className="bg-white/10 p-1 rounded-full group-hover:bg-white/20 transition-all">
+              <FaUser className="text-sm" />
+            </div>
             <span className="font-medium text-sm">Ahmad Fajar</span>
-          </div>
+          </Link>
+
           <Link href="/">
             <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-1.5 rounded-md text-sm font-bold flex items-center gap-2 transition-colors">
               <FaSignOutAlt /> Logout
@@ -47,7 +51,7 @@ export default function DashboardPage() {
             <ul className="space-y-1">
               {/* Dashboard Link (Active State) */}
               <li>
-                <Link href="/user\dashboard" className="flex items-center gap-3 px-6 py-3 bg-[#1e293b] text-white border-l-4 border-orange-500">
+                <Link href="/user/dashboard" className="flex items-center gap-3 px-6 py-3 bg-[#1e293b] text-white border-l-4 border-orange-500">
                   <FaHome />
                   <span className="font-medium">Dashboard</span>
                 </Link>
@@ -55,7 +59,7 @@ export default function DashboardPage() {
               
               {/* Cari Buku Link */}
               <li>
-                <Link href="/user\dashboard/cari-buku" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
+                <Link href="/user/dashboard/cari-buku" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
                   <FaSearch />
                   <span className="font-medium">Cari Buku</span>
                 </Link>
@@ -63,7 +67,7 @@ export default function DashboardPage() {
 
               {/* Informasi Link */}
               <li>
-                <Link href="/user\dashboard/informasi" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
+                <Link href="/user/dashboard/informasi" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
                   <FaInfoCircle />
                   <span className="font-medium">Informasi</span>
                 </Link>
@@ -82,7 +86,6 @@ export default function DashboardPage() {
 
           {/* --- STATS CARDS --- */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {/* Sedang Dipinjam Card */}
             <div className="bg-white p-6 rounded-xl shadow-sm flex items-center gap-5 border border-gray-100">
               <div className="bg-[#1e293b] p-4 rounded-lg text-white text-2xl">
                 <FaBook />
@@ -93,7 +96,6 @@ export default function DashboardPage() {
               </div>
             </div>
             
-            {/* Total Peminjaman Card */}
             <div className="bg-white p-6 rounded-xl shadow-sm flex items-center gap-5 border border-gray-100">
               <div className="bg-orange-500 p-4 rounded-lg text-white text-2xl">
                 <FaHistory />
@@ -104,7 +106,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Denda Aktif Card */}
             <div className="bg-white p-6 rounded-xl shadow-sm flex items-center gap-5 border border-gray-100">
               <div className="bg-[#a3e635] p-4 rounded-lg text-white text-2xl">
                 <FaCheckCircle />
