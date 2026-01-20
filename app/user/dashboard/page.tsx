@@ -1,83 +1,22 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
-import { 
-  FaBook, 
-  FaHistory, 
-  FaCheckCircle, 
-  FaSignOutAlt, 
-  FaUser, 
-  FaSearch, 
-  FaInfoCircle,
-  FaHome,
-  FaGraduationCap
-} from 'react-icons/fa';
+import Navbar from '../../components/navbar';
+import Sidebar from '../../components/sidebar';
+import { FaBook, FaHistory, FaCheckCircle } from 'react-icons/fa';
 
 export default function DashboardPage() {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
+    /* Changed min-h-screen to h-screen and added overflow-hidden to lock the viewport */
+    <div className="h-screen bg-gray-50 flex flex-col font-sans overflow-hidden">
+      <Navbar />
       
-      {/* --- TOP NAVBAR --- */}
-      <nav className="bg-[#1e293b] text-white h-16 flex items-center justify-between px-6 shadow-md fixed w-full z-10">
-        <div className="flex items-center gap-3">
-          <FaGraduationCap className="text-3xl" />
-          <h1 className="text-xl font-bold tracking-wide">SIMPES JTIK</h1>
-        </div>
+      /* Changed min-h-screen to h-full to fill the remaining space below the navbar */
+      <div className="flex pt-16 h-full">
+        <Sidebar />
 
-        <div className="flex items-center gap-6">
-          {/* REDIRECT TO PROFILE ON CLICK */}
-          <Link href="dashboard/profile" className="flex items-center gap-2 hover:text-orange-400 transition-colors cursor-pointer group">
-            <div className="bg-white/10 p-1 rounded-full group-hover:bg-white/20 transition-all">
-              <FaUser className="text-sm" />
-            </div>
-            <span className="font-medium text-sm">Ahmad Fajar</span>
-          </Link>
-
-          <Link href="/">
-            <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-1.5 rounded-md text-sm font-bold flex items-center gap-2 transition-colors">
-              <FaSignOutAlt /> Logout
-            </button>
-          </Link>
-        </div>
-      </nav>
-
-      {/* --- MAIN LAYOUT (Sidebar + Content) --- */}
-      <div className="flex pt-16 min-h-screen">
-        
-        {/* --- SIDEBAR --- */}
-        <aside className="w-64 bg-white shadow-lg fixed h-full hidden md:block">
-          <div className="py-6">
-            <ul className="space-y-1">
-              {/* Dashboard Link (Active State) */}
-              <li>
-                <Link href="/user/dashboard" className="flex items-center gap-3 px-6 py-3 bg-[#1e293b] text-white border-l-4 border-orange-500">
-                  <FaHome />
-                  <span className="font-medium">Dashboard</span>
-                </Link>
-              </li>
-              
-              {/* Cari Buku Link */}
-              <li>
-                <Link href="/user/dashboard/cari-buku" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
-                  <FaSearch />
-                  <span className="font-medium">Cari Buku</span>
-                </Link>
-              </li>
-
-              {/* Informasi Link */}
-              <li>
-                <Link href="/user/dashboard/informasi" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
-                  <FaInfoCircle />
-                  <span className="font-medium">Informasi</span>
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </aside>
-
-        {/* --- CONTENT AREA --- */}
-        <main className="flex-1 md:ml-64 p-8 bg-gray-50">
+        {/* Added overflow-y-auto to allow scrolling ONLY within this content area */}
+        <main className="flex-1 md:ml-64 p-8 bg-gray-50 overflow-y-auto">
           
           <div className="flex justify-between items-end mb-8">
             <h2 className="text-2xl font-bold text-[#1e293b]">Dashboard Anggota</h2>
@@ -192,7 +131,6 @@ export default function DashboardPage() {
               </table>
             </div>
           </div>
-
         </main>
       </div>
     </div>

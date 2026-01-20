@@ -1,9 +1,11 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+// Import modular components using your established paths
+import Navbar from "../../../components/navbar";
+import Sidebar from "../../../components/sidebar"; // Adjusted relative path based on your folder structure
 import { 
-  FaUser, FaSearch, FaInfoCircle, FaHome, FaSignOutAlt, FaGraduationCap, FaLock, FaHistory
+  FaUser, FaLock, FaHistory
 } from "react-icons/fa";
 import { 
   Mail, Phone, Hash, BookOpen, School, Download, Eye, Edit3 
@@ -11,66 +13,30 @@ import {
 
 export default function ProfilAnggotaPage() {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
+    /* h-screen + overflow-hidden prevents the double scrollbar seen in your screenshots */
+    <div className="h-screen bg-gray-50 flex flex-col font-sans overflow-hidden">
       
-      {/* --- TOP NAVBAR --- */}
-      <nav className="bg-[#1e293b] text-white h-16 flex items-center justify-between px-6 shadow-md fixed w-full z-20">
-        <div className="flex items-center gap-3">
-          <FaGraduationCap className="text-3xl" />
-          <h1 className="text-xl font-bold tracking-wide">SIMPES JTIK</h1>
-        </div>
+      {/* --- TOP NAVBAR COMPONENT --- */}
+      <Navbar />
 
-        <div className="flex items-center gap-6">
-          
-          <Link href="/">
-            <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-1.5 rounded-md text-sm font-bold flex items-center gap-2 transition-colors">
-              <FaSignOutAlt /> Logout
-            </button>
-          </Link>
-        </div>
-      </nav>
-
-      {/* --- MAIN LAYOUT --- */}
-      <div className="flex pt-16 min-h-screen">
+      <div className="flex pt-16 h-full">
         
-        {/* --- SIDEBAR --- */}
-        <aside className="w-64 bg-white shadow-lg fixed h-full hidden md:block">
-          <div className="py-6">
-            <ul className="space-y-1">
-              <li>
-                <Link href="/user/dashboard" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
-                  <FaHome />
-                  <span className="font-medium">Dashboard</span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/user/dashboard/cari-buku" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
-                  <FaSearch />
-                  <span className="font-medium">Cari Buku</span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/user/dashboard/informasi" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
-                  <FaInfoCircle />
-                  <span className="font-medium">Informasi</span>
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </aside>
+        {/* --- MODULAR SIDEBAR COMPONENT --- */}
+        <Sidebar />
 
-        {/* --- CONTENT AREA (ml-64 to accommodate sidebar) --- */}
-        <main className="flex-1 md:ml-64 p-8">
+        {/* --- MAIN CONTENT AREA --- */}
+        {/* Added overflow-y-auto so ONLY this section scrolls, matching your Dashboard behavior */}
+        <main className="flex-1 md:ml-64 p-8 overflow-y-auto no-scrollbar bg-gray-50">
           
           {/* Page Header */}
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl font-bold text-[#1e293b] flex items-center gap-3">
-              <FaUser /> Profil Anggota
+              <FaUser className="text-[#1e293b]" /> Profil Anggota
             </h2>
             <p className="text-sm text-gray-500">Informasi dan pengaturan akun Anda</p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-10">
             
             {/* LEFT COLUMN: Data Anggota & Keamanan */}
             <div className="space-y-8">
@@ -81,7 +47,7 @@ export default function ProfilAnggotaPage() {
                   <span className="font-bold text-xs uppercase">Data Anggota</span>
                 </div>
                 <div className="p-8 flex flex-col items-center">
-                  <div className="w-24 h-24 bg-yellow-400 rounded-full border-4 border-orange-500 flex items-center justify-center mb-4">
+                  <div className="w-24 h-24 bg-yellow-400 rounded-full border-4 border-orange-500 flex items-center justify-center mb-4 shadow-inner">
                     <FaUser size={40} className="text-[#1e293b]" />
                   </div>
                   <h3 className="text-lg font-bold text-[#1e293b]">Ahmad Fajar</h3>
@@ -124,17 +90,13 @@ export default function ProfilAnggotaPage() {
                 <div className="p-8 space-y-4">
                   <div>
                     <label className="text-[10px] font-bold text-gray-400 uppercase">Password Lama</label>
-                    <input type="password" px-4 py-2 className="w-full p-3 bg-gray-50 border border-gray-100 rounded-lg outline-none focus:ring-1 focus:ring-orange-500 text-sm" />
+                    <input type="password" placeholder="••••••••" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-lg outline-none focus:ring-1 focus:ring-orange-500 text-sm" />
                   </div>
                   <div>
                     <label className="text-[10px] font-bold text-gray-400 uppercase">Password Baru</label>
-                    <input type="password" px-4 py-2 className="w-full p-3 bg-gray-50 border border-gray-100 rounded-lg outline-none focus:ring-1 focus:ring-orange-500 text-sm" />
+                    <input type="password" placeholder="••••••••" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-lg outline-none focus:ring-1 focus:ring-orange-500 text-sm" />
                   </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase">Konfirmasi Password Baru</label>
-                    <input type="password" px-4 py-2 className="w-full p-3 bg-gray-50 border border-gray-100 rounded-lg outline-none focus:ring-1 focus:ring-orange-500 text-sm" />
-                  </div>
-                  <button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg text-sm flex items-center justify-center gap-2 mt-2">
+                  <button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg text-sm flex items-center justify-center gap-2 mt-2 transition-colors">
                     <FaLock size={12} /> Ubah Password
                   </button>
                 </div>
@@ -150,21 +112,21 @@ export default function ProfilAnggotaPage() {
                   <span className="font-bold text-xs uppercase">Kartu Anggota</span>
                 </div>
                 <div className="p-8 flex flex-col items-center">
+                  {/* Visual ID Card */}
                   <div className="w-full max-w-[260px] aspect-[3/4.2] bg-[#1e293b] rounded-xl relative overflow-hidden p-6 flex flex-col items-center border-b-8 border-yellow-400 shadow-xl">
                     <div className="text-white text-[8px] font-bold tracking-widest uppercase mb-4 opacity-40">Kartu Anggota Perpustakaan</div>
-                    <div className="w-40 h-40 bg-white rounded-lg p-2 mb-4">
-                      {/* Image representation of the QR Code from screenshot */}
-                      <div className="w-full h-full border border-gray-100 flex items-center justify-center text-[10px] text-gray-300 font-bold">QR CODE</div>
+                    <div className="w-40 h-40 bg-white rounded-lg p-2 mb-4 shadow-inner flex items-center justify-center">
+                      <div className="text-[10px] text-gray-300 font-bold border-2 border-dashed border-gray-100 p-4 text-center">QR CODE SPACE</div>
                     </div>
                     <div className="text-center text-white">
                       <h4 className="font-bold text-md uppercase tracking-tight">Ahmad Fajar</h4>
                       <p className="text-[#38bdf8] text-[10px] font-bold mt-1">2021001</p>
-                      <p className="text-[#38bdf8] text-[10px] font-bold">PTIK A</p>
+                      <p className="text-[#38bdf8] text-[10px] font-bold uppercase">PTIK A</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3 w-full mt-6">
-                    <button className="bg-[#0ea5e9] text-white py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2"><Eye size={14}/> Lihat Kartu</button>
-                    <button className="bg-orange-500 text-white py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2"><Download size={14}/> Download</button>
+                    <button className="bg-[#0ea5e9] hover:bg-blue-600 text-white py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-colors"><Eye size={14}/> Lihat</button>
+                    <button className="bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-colors"><Download size={14}/> Cetak</button>
                   </div>
                 </div>
               </div>
@@ -176,32 +138,26 @@ export default function ProfilAnggotaPage() {
                   <span className="font-bold text-xs uppercase">Log Aktivitas Akun</span>
                 </div>
                 <div className="p-6 space-y-6">
-                  <div className="flex gap-4">
-                    <div className="p-2 bg-orange-50 rounded-lg text-orange-500"><FaLock size={14}/></div>
-                    <div>
-                      <p className="text-sm font-bold text-[#1e293b]">Password Diperbarui</p>
-                      <p className="text-[10px] text-gray-400 font-bold mt-1">2025-11-05 14:30 WITA</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-4">
-                    <div className="p-2 bg-blue-50 rounded-lg text-blue-500"><FaHistory size={14}/></div>
-                    <div>
-                      <p className="text-sm font-bold text-[#1e293b]">Login Berhasil</p>
-                      <p className="text-[10px] text-gray-400 font-bold mt-1">2025-11-07 10:00 WITA</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-4">
-                    <div className="p-2 bg-orange-50 rounded-lg text-orange-500"><FaUser size={14}/></div>
-                    <div>
-                      <p className="text-sm font-bold text-[#1e293b]">Data Profil Diperbarui</p>
-                      <p className="text-[10px] text-gray-400 font-bold mt-1">2025-10-20 09:15 WITA</p>
-                    </div>
-                  </div>
+                  <ActivityItem icon={<FaLock />} title="Password Diperbarui" date="2025-11-05 14:30 WITA" color="text-orange-500" bgColor="bg-orange-50" />
+                  <ActivityItem icon={<FaHistory />} title="Login Berhasil" date="2025-11-07 10:00 WITA" color="text-blue-500" bgColor="bg-blue-50" />
                 </div>
               </div>
             </div>
           </div>
         </main>
+      </div>
+    </div>
+  );
+}
+
+// Helper component for clean Activity Logs
+function ActivityItem({ icon, title, date, color, bgColor }: any) {
+  return (
+    <div className="flex gap-4 items-start">
+      <div className={`p-2 ${bgColor} rounded-lg ${color}`}>{icon}</div>
+      <div>
+        <p className="text-sm font-bold text-[#1e293b]">{title}</p>
+        <p className="text-[10px] text-gray-400 font-bold mt-1">{date}</p>
       </div>
     </div>
   );

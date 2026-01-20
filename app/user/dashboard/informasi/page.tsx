@@ -1,14 +1,11 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+// Corrected relative paths based on your 3-level deep folder structure
+import Navbar from '../../../components/navbar';
+import Sidebar from '../../../components/sidebar';
 import { 
   FaInfoCircle, 
-  FaHome, 
-  FaSearch, 
-  FaGraduationCap, 
-  FaUser, 
-  FaSignOutAlt,
   FaClock,
   FaPhoneAlt,
   FaInstagram,
@@ -21,56 +18,19 @@ import {
 
 export default function InformasiPage() {
   return (
+    /* LOCK VIEWPORT: h-screen and overflow-hidden ensures the browser scrollbar stays hidden */
     <div className="h-screen bg-gray-50 flex flex-col font-sans overflow-hidden">
       
-      {/* --- TOP NAVBAR --- */}
-      <nav className="bg-[#1e293b] text-white h-16 flex items-center justify-between px-6 shadow-md fixed w-full z-20">
-        <div className="flex items-center gap-3">
-          <FaGraduationCap className="text-3xl" />
-          <h1 className="text-xl font-bold tracking-wide">SIMPES JTIK</h1>
-        </div>
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <FaUser className="text-sm" />
-            <span className="font-medium text-sm">Ahmad Fajar</span>
-          </div>
-          <Link href="/">
-            <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-1.5 rounded-md text-sm font-bold flex items-center gap-2 transition-colors">
-              <FaSignOutAlt /> Logout
-            </button>
-          </Link>
-        </div>
-      </nav>
+      {/* Shared Navbar component */}
+      <Navbar />
 
+      /* FILL HEIGHT: h-full ensures the container takes the space below the navbar */
       <div className="flex pt-16 h-full">
         
-        {/* --- SIDEBAR --- */}
-        <aside className="w-64 bg-white shadow-lg fixed h-full hidden md:block border-r border-blue-100 z-10">
-          <div className="py-6">
-            <ul className="space-y-1">
-              <li>
-                <Link href="/user\dashboard" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
-                  <FaHome />
-                  <span className="font-medium">Dashboard</span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/user\dashboard/cari-buku" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
-                  <FaSearch />
-                  <span className="font-medium">Cari Buku</span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/user\dashboard/informasi" className="flex items-center gap-3 px-6 py-3 bg-[#1e293b] text-white border-l-4 border-orange-500">
-                  <FaInfoCircle />
-                  <span className="font-medium">Informasi</span>
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </aside>
+        {/* Shared Sidebar component */}
+        <Sidebar />
 
-        {/* --- SCROLLABLE CONTENT AREA --- */}
+        {/* INTERNAL SCROLL: overflow-y-auto makes only the content scrollable */}
         <main className="flex-1 md:ml-64 p-8 bg-white overflow-y-auto">
           
           {/* Header Section */}
@@ -99,7 +59,7 @@ export default function InformasiPage() {
             <div className="lg:col-span-2 space-y-8">
               
               {/* Rules Section */}
-              <div className="border border-gray-200 rounded-xl overflow-hidden">
+              <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                 <div className="bg-[#1e293b] text-white px-6 py-3 font-bold flex items-center gap-2">
                    Tata Tertib Perpustakaan
                 </div>
@@ -124,7 +84,7 @@ export default function InformasiPage() {
               </div>
 
               {/* Operating Hours */}
-              <div className="border border-gray-200 rounded-xl overflow-hidden">
+              <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                 <div className="bg-[#1e293b] text-white px-6 py-3 font-bold flex items-center gap-2">
                   <FaClock /> Jam Operasional
                 </div>
@@ -149,7 +109,7 @@ export default function InformasiPage() {
             <div className="space-y-8">
               
               {/* Contact Us */}
-              <div className="border border-gray-200 rounded-xl overflow-hidden">
+              <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                 <div className="bg-[#1e293b] text-white px-6 py-3 font-bold flex items-center gap-2">
                   <FaPhoneAlt className="text-xs" /> Kontak Kami
                 </div>
@@ -179,7 +139,7 @@ export default function InformasiPage() {
               </div>
 
               {/* Loan Policy */}
-              <div className="border border-gray-200 rounded-xl overflow-hidden">
+              <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                 <div className="bg-[#1e293b] text-white px-6 py-3 font-bold flex items-center gap-2">
                   <FaInfoCircle className="text-xs" /> Ketentuan Peminjaman
                 </div>
@@ -202,14 +162,14 @@ export default function InformasiPage() {
                     <FaExclamationTriangle className="text-red-500 mt-1" />
                     <div>
                       <p className="text-xs font-bold">Buku Hilang</p>
-                      <p className="text-[10px] text-gray-500">Denda akumulasi + Buku diganti yang baru (buku yang sama) + Surat pernyataan</p>
+                      <p className="text-[10px] text-gray-500">Denda akumulasi + Buku diganti yang baru + Surat pernyataan</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* FAQ Section */}
-              <div className="border border-gray-200 rounded-xl overflow-hidden">
+              <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                 <div className="bg-[#1e293b] text-white px-6 py-3 font-bold flex items-center gap-2">
                   <FaQuestionCircle className="text-xs" /> FAQ
                 </div>
@@ -223,10 +183,7 @@ export default function InformasiPage() {
                     </div>
                   </div>
                   <button className="w-full flex justify-between items-center p-3 text-gray-600 rounded-lg text-xs font-bold border border-gray-100 mb-1">
-                    Berapa maksimal buku yang bisa dipinjam? <FaChevronDown />
-                  </button>
-                  <button className="w-full flex justify-between items-center p-3 text-gray-600 rounded-lg text-xs font-bold border border-gray-100">
-                    Bagaimana cara perpanjangan peminjaman? <FaChevronDown />
+                    Berapa maksimal buku dipinjam? <FaChevronDown />
                   </button>
                 </div>
               </div>

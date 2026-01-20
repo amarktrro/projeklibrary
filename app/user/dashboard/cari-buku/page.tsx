@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+// Updated imports to use your new modular components
+import Navbar from '../../../components/navbar';
+import Sidebar from '../../../components/sidebar';
 import { 
   FaSearch, 
   FaBook, 
@@ -9,11 +11,7 @@ import {
   FaTag, 
   FaBookmark, 
   FaHandHolding,
-  FaBan,
-  FaHome,
-  FaInfoCircle,
-  FaGraduationCap,
-  FaSignOutAlt
+  FaBan
 } from 'react-icons/fa';
 
 export default function CariBukuPage() {
@@ -48,57 +46,20 @@ export default function CariBukuPage() {
   const categories = ["Semua Kategori", ...new Set(books.map(b => b.category))];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
+    /* Changed min-h-screen to h-screen and added overflow-hidden to lock viewport */
+    <div className="h-screen bg-gray-50 flex flex-col font-sans overflow-hidden">
       
-      {/* --- TOP NAVBAR --- */}
-      <nav className="bg-[#1e293b] text-white h-16 flex items-center justify-between px-6 shadow-md fixed w-full z-10">
-        <div className="flex items-center gap-3">
-          <FaGraduationCap className="text-3xl" />
-          <h1 className="text-xl font-bold tracking-wide">SIMPES JTIK</h1>
-        </div>
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <FaUser className="text-sm" />
-            <span className="font-medium text-sm">Ahmad Fajar</span>
-          </div>
-          <Link href="/">
-            <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-1.5 rounded-md text-sm font-bold flex items-center gap-2 transition-colors">
-              <FaSignOutAlt /> Logout
-            </button>
-          </Link>
-        </div>
-      </nav>
+      {/* Use the shared Navbar */}
+      <Navbar />
 
-      <div className="flex pt-16 min-h-screen">
+      /* Changed min-h-screen to h-full */
+      <div className="flex pt-16 h-full">
         
-        {/* --- SIDEBAR --- */}
-        <aside className="w-64 bg-white shadow-lg fixed h-full hidden md:block border-r border-blue-100">
-          <div className="py-6">
-            <ul className="space-y-1">
-              <li>
-                <Link href="/user/dashboard" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
-                  <FaHome />
-                  <span className="font-medium">Dashboard</span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/user/dashboard/cari-buku" className="flex items-center gap-3 px-6 py-3 bg-[#1e293b] text-white border-l-4 border-orange-500">
-                  <FaSearch />
-                  <span className="font-medium">Cari Buku</span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/user/dashboard/informasi" className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-orange-500 transition-colors">
-                  <FaInfoCircle />
-                  <span className="font-medium">Informasi</span>
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </aside>
+        {/* Use the shared Sidebar */}
+        <Sidebar />
 
-        {/* --- CONTENT AREA --- */}
-        <main className="flex-1 md:ml-64 p-8 bg-white">
+        {/* Added overflow-y-auto to create the clean internal scrollbar */}
+        <main className="flex-1 md:ml-64 p-8 bg-white overflow-y-auto">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-3">
               <div className="bg-[#1e293b] p-2 rounded text-white">
@@ -129,7 +90,7 @@ export default function CariBukuPage() {
               className="bg-white border border-gray-300 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-orange-500 min-w-[200px] font-medium text-[#1e293b]"
             >
               {categories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
+                <option key={cat as string} value={cat as string}>{cat as string}</option>
               ))}
             </select>
           </div>
