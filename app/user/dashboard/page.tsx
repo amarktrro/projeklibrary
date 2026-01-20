@@ -11,12 +11,12 @@ export default function DashboardPage() {
     <div className="h-screen bg-gray-50 flex flex-col font-sans overflow-hidden">
       <Navbar />
       
-      /* Changed min-h-screen to h-full to fill the remaining space below the navbar */
+      {/* Changed min-h-screen to h-full to fill the remaining space below the navbar */}
       <div className="flex pt-16 h-full">
         <Sidebar />
 
-        {/* Added overflow-y-auto to allow scrolling ONLY within this content area */}
-        <main className="flex-1 md:ml-64 p-8 bg-gray-50 overflow-y-auto">
+        {/* FIXED: Changed p-8 to pt-2 px-8 pb-8 to remove the top gap */}
+        <main className="flex-1 md:ml-64 pt-2 px-8 pb-8 bg-gray-50 overflow-y-auto">
           
           <div className="flex justify-between items-end mb-8">
             <h2 className="text-2xl font-bold text-[#1e293b]">Dashboard Anggota</h2>
