@@ -1,12 +1,44 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Wallet, Calculator } from "lucide-react";
 
 export default function KelolaDendaPage() {
+  // Using string state to better manage manual typing of decimals
+  const [days, setDays] = useState<string>("");
+
+  // Calculation Logic: 1 day = 1,000 Rp. 
+  const fineAmount = days ? parseFloat(days) * 1000 : 0;
+
+  // Currency Formatter for Indonesian Rupiah
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(value).replace("IDR", "Rp");
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+
+    // 1. Remove any character that is not a digit (0-9) or a decimal point (.)
+    // This prevents letters, symbols, and negative signs (-)
+    value = value.replace(/[^0-9.]/g, '');
+
+    // 2. Prevent multiple decimal points (only allow the first one)
+    const parts = value.split('.');
+    if (parts.length > 2) {
+      value = parts[0] + '.' + parts.slice(1).join('');
+    }
+
+    setDays(value);
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="bg-[#1e293b] rounded-[2.5rem] p-10 flex items-center justify-between text-white shadow-lg">
+      {/* Header Stat Card */}
+      <div className="bg-[#1e293b] rounded-[2.5rem] p-10 flex items-center justify-between text-white shadow-lg border border-white/5">
         <div>
           <h2 className="text-3xl font-black tracking-tight">Kelola Denda & Keuangan</h2>
           <p className="text-slate-400 font-bold text-sm">Monitoring kas denda keterlambatan buku</p>
@@ -21,33 +53,50 @@ export default function KelolaDendaPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Fine Calculator - Slate Navy */}
-        <div className="bg-[#1e293b] rounded-[3rem] p-10 text-white">
+        {/* --- Restricted Fine Calculator --- */}
+        <div className="bg-[#1e293b] rounded-[3rem] p-10 text-white border border-white/5 shadow-xl">
           <div className="flex items-center gap-4 mb-8">
             <Calculator className="text-orange-500" />
             <h3 className="text-xl font-black">Kalkulator Denda</h3>
           </div>
           <div className="space-y-6">
-            <input type="number" placeholder="Hari terlambat" className="w-full bg-white/10 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-orange-500" />
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                Masukkan Jumlah Hari
+              </label>
+              <input 
+                type="text" 
+                inputMode="decimal" // Shows decimal-friendly keyboard on mobile
+                value={days}
+                onChange={handleInputChange}
+                placeholder="" // Removed "Contoh: 5"
+                className="w-full bg-white/10 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-orange-500 transition-all text-white font-bold text-lg" 
+              />
+            </div>
+            
             <div className="pt-6 border-t border-white/10">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Total Tagihan:</p>
-              <p className="text-6xl font-black text-orange-500">Rp 0</p>
+              <p className="text-6xl font-black text-orange-500 transition-all">
+                {formatCurrency(fineAmount)}
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Latest Transactions Table */}
-        <div className="bg-white rounded-[3rem] overflow-hidden border border-slate-100 shadow-sm flex flex-col">
-          <div className="bg-[#1e293b] p-6 text-white font-black text-sm uppercase tracking-widest">Riwayat Transaksi</div>
-          <div className="p-8 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-50 pb-4">
-              <span className="text-xs text-slate-400 font-bold">05/01/2026</span>
-              <span className="font-black text-[#1e293b]">Denda User #12</span>
-              <span className="font-black text-emerald-500">+Rp 5.000</span>
+        {/* --- Latest Transactions Table (Empty State) --- */}
+        <div className="bg-white rounded-[3rem] overflow-hidden border border-slate-100 shadow-sm flex flex-col min-h-[400px]">
+          <div className="bg-[#1e293b] p-6 text-white font-black text-sm uppercase tracking-widest">
+            Riwayat Transaksi
+          </div>
+          <div className="p-8 flex-1 flex flex-col items-center justify-center text-center space-y-2">
+            <div className="bg-slate-50 p-4 rounded-full">
+               <Wallet className="text-slate-300" size={32} />
             </div>
+            <p className="text-slate-400 font-bold text-sm">Belum ada riwayat transaksi</p>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
