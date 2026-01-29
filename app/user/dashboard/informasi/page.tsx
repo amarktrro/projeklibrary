@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-// Corrected relative paths based on your 3-level deep folder structure
 import Navbar from '../../../components/navbar';
 import Sidebar from '../../../components/sidebar';
 import { 
@@ -24,14 +23,14 @@ export default function InformasiPage() {
       {/* Shared Navbar component */}
       <Navbar />
 
-      /* FILL HEIGHT: h-full ensures the container takes the space below the navbar */
+      {/* FILL HEIGHT: h-full ensures the container takes the space below the navbar */}
       <div className="flex pt-16 h-full">
         
         {/* Shared Sidebar component */}
         <Sidebar />
 
-        {/* INTERNAL SCROLL: overflow-y-auto makes only the content scrollable */}
-        <main className="flex-1 md:ml-64 p-8 bg-white overflow-y-auto">
+        {/* FIXED: Changed p-8 to pt-2 px-8 pb-8 to remove the top gap */}
+        <main className="flex-1 md:ml-64 pt-2 px-8 pb-8 bg-white overflow-y-auto">
           
           {/* Header Section */}
           <div className="flex justify-between items-center mb-6">
@@ -65,10 +64,10 @@ export default function InformasiPage() {
                 </div>
                 <div className="p-6 space-y-6">
                   {[
-                    { id: 1, title: 'KETENANGAN DAN KETERTIBAN', desc: 'Mohon untuk tidak berisik agar lingkungan perpustakaan tetap tenang dan kondusif untuk belajar.' },
-                    { id: 2, title: 'PENYIMPANAN BARANG', desc: 'Harap menaruh tas dan sepatu di tempat yang telah disediakan untuk menjaga kebersihan dan ketertiban.' },
-                    { id: 3, title: 'PENGEMBALIAN BUKU', desc: 'Pastikan untuk mengembalikan buku dan skripsi ke tempatnya setelah selesai digunakan.' },
-                    { id: 4, title: 'KEBERSIHAN', desc: 'Dilarang membawa makanan dan minuman ke dalam perpustakaan untuk menjaga kebersihan.' }
+                    { id: 1, title: 'KETENANGAN AND KETERTIBAN', desc: 'Mohon untuk tidak berisik agar lingkungan perpustakaan tetap tenang dan kondusif untuk belajar.' },
+                    { id: 2, title: 'PENYIMPANAN BARANG', desc: 'Harap menaruh tas and sepatu di tempat yang telah disediakan untuk menjaga kebersihan and ketertiban.' },
+                    { id: 3, title: 'PENGEMBALIAN BUKU', desc: 'Pastikan untuk mengembalikan buku and skripsi ke tempatnya setelah selesai digunakan.' },
+                    { id: 4, title: 'KEBERSIHAN', desc: 'Dilarang membawa makanan and minuman ke dalam perpustakaan untuk menjaga kebersihan.' }
                   ].map((rule) => (
                     <div key={rule.id} className="flex gap-4 p-4 bg-gray-50 rounded-lg border-l-4 border-orange-500">
                       <div className="bg-[#1e293b] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shrink-0">
@@ -179,7 +178,7 @@ export default function InformasiPage() {
                       Bagaimana cara menjadi anggota? <FaChevronDown />
                     </button>
                     <div className="p-3 text-[10px] text-gray-600 bg-white border border-blue-50 rounded-b-lg">
-                      Mahasiswa JTIK dapat mendaftar melalui halaman registrasi dengan mengisi form dan melengkapi data diri.
+                      Mahasiswa JTIK dapat mendaftar melalui halaman registrasi dengan mengisi form and melengkapi data diri.
                     </div>
                   </div>
                   <button className="w-full flex justify-between items-center p-3 text-gray-600 rounded-lg text-xs font-bold border border-gray-100 mb-1">

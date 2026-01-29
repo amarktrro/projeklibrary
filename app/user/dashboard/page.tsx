@@ -42,10 +42,19 @@ export default function DashboardPage() {
     <div className="h-screen bg-gray-50 flex flex-col font-sans overflow-hidden">
       <Navbar />
       
+<<<<<<< HEAD
       <div className="flex pt-16 h-full">
         <Sidebar />
 
         <main className="flex-1 md:ml-64 p-8 bg-gray-50 overflow-y-auto">
+=======
+      {/* Changed min-h-screen to h-full to fill the remaining space below the navbar */}
+      <div className="flex pt-16 h-full">
+        <Sidebar />
+
+        {/* FIXED: Changed p-8 to pt-2 px-8 pb-8 to remove the top gap */}
+        <main className="flex-1 md:ml-64 pt-2 px-8 pb-8 bg-gray-50 overflow-y-auto">
+>>>>>>> 8da848ea0388dcd4c16c0877ec6f490df164288f
           
           <div className="flex justify-between items-end mb-8">
             <div>

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-// Updated imports to use your new modular components
+import React, { useState, useEffect, useMemo } from 'react';
+import Fuse from 'fuse.js';
 import Navbar from '../../../components/navbar';
 import Sidebar from '../../../components/sidebar';
 import { 
@@ -21,44 +21,46 @@ export default function CariBukuPage() {
   const [selectedCategory, setSelectedCategory] = useState("Semua Kategori");
 
   useEffect(() => {
-    // Connect to the same key used in Kelola Buku
     const savedBooks = localStorage.getItem("simpes_inventory");
     if (savedBooks) {
       setBooks(JSON.parse(savedBooks));
     }
   }, []);
 
-  // --- FILTER LOGIC ---
-  const filteredBooks = books.filter(book => {
-    const matchesSearch = 
-      book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.id.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCategory = 
-      selectedCategory === "Semua Kategori" || 
-      book.category === selectedCategory;
+  // --- FUZZY SEARCH LOGIC ---
+  const filteredBooks = useMemo(() => {
+    // 1. Start with the full book list or category-filtered list
+    let listToSearch = books;
 
-    return matchesSearch && matchesCategory;
-  });
+    // Apply Category Filter first (Hard Filter)
+    if (selectedCategory !== "Semua Kategori") {
+      listToSearch = books.filter(book => book.category === selectedCategory);
+    }
+
+    // 2. If there is no search query, return the list as is
+    if (!searchQuery.trim()) return listToSearch;
+
+    // 3. Setup Fuse.js for fuzzy matching
+    const fuse = new Fuse(listToSearch, {
+      keys: ["title", "author", "id"], // Searchable fields from your original logic
+      threshold: 0.4,                  // 0.4 allows for "similar enough" results
+      distance: 100,
+    });
+
+    // 4. Return the fuzzy results
+    return fuse.search(searchQuery).map(result => result.item);
+  }, [searchQuery, selectedCategory, books]);
 
   // Get unique categories for the dropdown
   const categories = ["Semua Kategori", ...new Set(books.map(b => b.category))];
 
   return (
-    /* Changed min-h-screen to h-screen and added overflow-hidden to lock viewport */
     <div className="h-screen bg-gray-50 flex flex-col font-sans overflow-hidden">
-      
-      {/* Use the shared Navbar */}
       <Navbar />
 
-      /* Changed min-h-screen to h-full */
       <div className="flex pt-16 h-full">
-        
-        {/* Use the shared Sidebar */}
         <Sidebar />
 
-        {/* Added overflow-y-auto to create the clean internal scrollbar */}
         <main className="flex-1 md:ml-64 p-8 bg-white overflow-y-auto">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-3">
@@ -100,12 +102,10 @@ export default function CariBukuPage() {
             {filteredBooks.length > 0 ? (
               filteredBooks.map((book) => (
                 <div key={book.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
-                  {/* Book Cover Placeholder */}
                   <div className="bg-[#c1d095] h-48 flex items-center justify-center m-4 rounded-xl">
                     <FaBook className="text-6xl text-[#1e293b]" />
                   </div>
                   
-                  {/* Book Details */}
                   <div className="px-6 pb-6 flex-1 flex flex-col">
                     <h3 className="font-bold text-[#1e293b] text-lg mb-3 line-clamp-2">{book.title}</h3>
                     
@@ -121,14 +121,12 @@ export default function CariBukuPage() {
                       </div>
                     </div>
 
-                    {/* Stock Status */}
                     <div className="mb-4">
                       <span className={`${book.stock > 0 ? 'bg-green-600' : 'bg-red-600'} text-white text-xs px-3 py-1 rounded-full font-bold`}>
                         {book.stock > 0 ? `Tersedia: ${book.stock}` : 'Stok Habis'}
                       </span>
                     </div>
 
-                    {/* Action Button */}
                     {book.stock > 0 ? (
                       <button className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold transition-colors mt-auto">
                         <FaHandHolding /> Pinjam Buku
