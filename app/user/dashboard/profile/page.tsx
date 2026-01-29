@@ -1,148 +1,159 @@
-"use client";
+'use client';
 
-import React from "react";
-// Import modular components using your established paths
-import Navbar from "../../../components/navbar";
-import Sidebar from "../../../components/sidebar"; // Adjusted relative path based on your folder structure
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useRouter } from 'next/navigation';
+import Navbar from '../../../components/navbar';
+import Sidebar from '../../../components/sidebar';
 import { 
-  FaUser, FaLock, FaHistory
-} from "react-icons/fa";
-import { 
-  Mail, Phone, Hash, BookOpen, School, Download, Eye, Edit3 
-} from "lucide-react";
+  FaUser, FaIdCard, FaGraduationCap, FaUsers, 
+  FaEnvelope, FaPhone, FaQrcode, FaEdit, FaSave, FaTimes 
+} from 'react-icons/fa';
 
-export default function ProfilAnggotaPage() {
+interface UserData {
+  name: string;
+  nim: string;
+  prodi: string;
+  kelas: string;
+  email: string;
+  no_hp: string;
+}
+
+interface ProfileRowProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  isEditing: boolean;
+  onChange: (val: string) => void;
+}
+
+export default function UserProfilePage() {
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState<UserData>({
+    name: '', nim: '', prodi: '', kelas: '', email: '', no_hp: ''
+  });
+  const [message, setMessage] = useState({ type: '', text: '' });
+
+  if (typeof window !== 'undefined' && !localStorage.getItem('token')) {
+    window.location.href = '/';
+    return null;
+  }
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await axios.get('http://127.0.0.1:8000/api/user-profile', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setUserData(response.data);
+      setFormData(response.data);
+    } catch (error) {
+      localStorage.removeItem('token');
+      window.location.href = '/';
+    }
+  };
+
+  const handleUpdate = async () => {
+    const token = localStorage.getItem('token');
+    setMessage({ type: '', text: '' });
+    try {
+      const response = await axios.put('http://127.0.0.1:8000/api/user-update', formData, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setUserData(response.data.user);
+      localStorage.setItem('user_name', response.data.user.name);
+      setIsEditing(false);
+      setMessage({ type: 'success', text: 'Profil berhasil diperbarui!' });
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Gagal memperbarui profil. Periksa koneksi atau backend Laravel Anda.' });
+    }
+  };
+
   return (
-    /* h-screen + overflow-hidden prevents the double scrollbar seen in your screenshots */
     <div className="h-screen bg-gray-50 flex flex-col font-sans overflow-hidden">
-      
-      {/* --- TOP NAVBAR COMPONENT --- */}
       <Navbar />
-
       <div className="flex pt-16 h-full">
-        
-        {/* --- MODULAR SIDEBAR COMPONENT --- */}
         <Sidebar />
-
-        {/* --- MAIN CONTENT AREA --- */}
-        {/* Added overflow-y-auto so ONLY this section scrolls, matching your Dashboard behavior */}
-        <main className="flex-1 md:ml-64 p-8 overflow-y-auto no-scrollbar bg-gray-50">
+        <main className="flex-1 md:ml-64 p-8 bg-white overflow-y-auto scroll-smooth">
           
-          {/* Page Header */}
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold text-[#1e293b] flex items-center gap-3">
-              <FaUser className="text-[#1e293b]" /> Profil Anggota
-            </h2>
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-[#1e293b]">Profil Anggota</h2>
             <p className="text-sm text-gray-500">Informasi dan pengaturan akun Anda</p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-10">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             
-            {/* LEFT COLUMN: Data Anggota & Keamanan */}
-            <div className="space-y-8">
-              {/* Data Anggota */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="bg-[#1e293b] p-4 flex items-center gap-3 text-white">
-                  <FaUser size={14} />
-                  <span className="font-bold text-xs uppercase">Data Anggota</span>
-                </div>
-                <div className="p-8 flex flex-col items-center">
-                  <div className="w-24 h-24 bg-yellow-400 rounded-full border-4 border-orange-500 flex items-center justify-center mb-4 shadow-inner">
-                    <FaUser size={40} className="text-[#1e293b]" />
-                  </div>
-                  <h3 className="text-lg font-bold text-[#1e293b]">Ahmad Fajar</h3>
-                  <p className="text-xs text-gray-400 font-medium mb-6">Anggota Aktif | NIM: 2021001</p>
-
-                  <div className="w-full space-y-3 text-sm">
-                    <div className="flex justify-between py-2 border-b border-gray-50">
-                      <span className="text-gray-500 font-bold flex items-center gap-2"><Hash size={14}/> NIM</span>
-                      <span className="font-bold text-[#1e293b]">2021001</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-gray-50">
-                      <span className="text-gray-500 font-bold flex items-center gap-2"><School size={14}/> Program Studi</span>
-                      <span className="font-bold text-[#1e293b]">PTIK</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-gray-50">
-                      <span className="text-gray-500 font-bold flex items-center gap-2"><BookOpen size={14}/> Kelas</span>
-                      <span className="font-bold text-[#1e293b]">A</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-gray-50">
-                      <span className="text-gray-500 font-bold flex items-center gap-2"><Mail size={14}/> Email</span>
-                      <span className="font-bold text-[#1e293b]">ahmad@email.com</span>
-                    </div>
-                    <div className="flex justify-between py-2">
-                      <span className="text-gray-500 font-bold flex items-center gap-2"><Phone size={14}/> No. HP</span>
-                      <span className="font-bold text-[#1e293b]">081234567890</span>
-                    </div>
-                  </div>
-                  <button className="mt-6 bg-yellow-400 hover:bg-yellow-500 text-[#1e293b] font-bold px-5 py-2 rounded-lg text-sm flex items-center gap-2 transition-all shadow-sm">
-                    <Edit3 size={14} /> Edit Profil
-                  </button>
-                </div>
+            {/* LEFT: DATA ANGGOTA */}
+            <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="bg-[#1e293b] p-4 text-white text-xs font-bold flex items-center gap-2">
+                <FaIdCard /> DATA ANGGOTA
               </div>
-
-              {/* Pengaturan Keamanan */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="bg-[#1e293b] p-4 flex items-center gap-3 text-white">
-                  <FaLock size={14} />
-                  <span className="font-bold text-xs uppercase">Pengaturan Keamanan</span>
+              
+              <div className="p-10">
+                <div className="flex flex-col items-center mb-10">
+                  <div className="w-24 h-24 bg-orange-500 rounded-full flex items-center justify-center mb-4 border-4 border-orange-100 shadow-md text-white text-4xl font-bold">
+                    {userData?.name?.charAt(0) || '?'}
+                  </div>
+                  <h2 className="text-xl font-bold text-[#1e293b] uppercase tracking-tight">{userData?.name}</h2>
                 </div>
-                <div className="p-8 space-y-4">
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase">Password Lama</label>
-                    <input type="password" placeholder="••••••••" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-lg outline-none focus:ring-1 focus:ring-orange-500 text-sm" />
+
+                <div className="space-y-1 mb-10">
+                  <ProfileRow icon={<FaUser />} label="Nama Lengkap" value={isEditing ? formData.name : userData?.name || ''} isEditing={isEditing} onChange={(val) => setFormData({...formData, name: val})} />
+                  <ProfileRow icon={<FaIdCard />} label="NIM" value={isEditing ? formData.nim : userData?.nim || ''} isEditing={isEditing} onChange={(val) => setFormData({...formData, nim: val})} />
+                  <ProfileRow icon={<FaGraduationCap />} label="Program Studi" value={isEditing ? formData.prodi : userData?.prodi || ''} isEditing={isEditing} onChange={(val) => setFormData({...formData, prodi: val})} />
+                  <ProfileRow icon={<FaUsers />} label="Kelas" value={isEditing ? formData.kelas : userData?.kelas || ''} isEditing={isEditing} onChange={(val) => setFormData({...formData, kelas: val})} />
+                  <ProfileRow icon={<FaEnvelope />} label="Email" value={isEditing ? formData.email : userData?.email || ''} isEditing={isEditing} onChange={(val) => setFormData({...formData, email: val})} />
+                  <ProfileRow icon={<FaPhone />} label="Nomor HP" value={isEditing ? formData.no_hp : userData?.no_hp || ''} isEditing={isEditing} onChange={(val) => setFormData({...formData, no_hp: val})} />
+                </div>
+
+                {/* EDIT BUTTON MOVED TO BOTTOM */}
+                <div className="flex justify-center pt-6 border-t border-gray-100">
+                  {!isEditing ? (
+                    <button onClick={() => setIsEditing(true)} className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-orange-100 active:scale-95">
+                      <FaEdit /> Edit Profil
+                    </button>
+                  ) : (
+                    <div className="flex gap-4 w-full">
+                      <button onClick={() => { setIsEditing(false); setFormData(userData!); }} className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-bold flex items-center justify-center gap-2">
+                        <FaTimes /> Batal
+                      </button>
+                      <button onClick={handleUpdate} className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-green-100">
+                        <FaSave /> Simpan Perubahan
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {message.text && <p className={`mt-4 text-center text-sm font-bold ${message.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>{message.text}</p>}
+              </div>
+            </div>
+
+            {/* RIGHT: KARTU ANGGOTA (STICKY) */}
+            <div className="sticky top-8"> 
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden transition-all duration-300">
+                <div className="bg-[#1e293b] p-4 text-white text-xs font-bold flex items-center gap-2">
+                  <FaQrcode /> KARTU ANGGOTA
+                </div>
+                <div className="p-6">
+                  <div className="bg-[#1e293b] rounded-2xl p-6 text-center text-white aspect-[3/4] flex flex-col justify-between border-b-[10px] border-orange-500 shadow-xl relative overflow-hidden">
+                      <div className="bg-white w-32 h-32 mx-auto rounded-xl flex items-center justify-center border-4 border-white/10 shadow-inner">
+                          <FaQrcode size={80} className="text-[#1e293b]" />
+                      </div>
+                      <div className="relative z-10">
+                          <h3 className="font-bold uppercase tracking-wider text-sm truncate">{userData?.name}</h3>
+                          <p className="text-orange-400 text-xs font-mono font-bold">{userData?.nim}</p>
+                          <p className="text-gray-300 text-[10px] uppercase mt-1">{userData?.prodi} - {userData?.kelas}</p>
+                      </div>
                   </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase">Password Baru</label>
-                    <input type="password" placeholder="••••••••" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-lg outline-none focus:ring-1 focus:ring-orange-500 text-sm" />
-                  </div>
-                  <button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg text-sm flex items-center justify-center gap-2 mt-2 transition-colors">
-                    <FaLock size={12} /> Ubah Password
-                  </button>
                 </div>
               </div>
             </div>
 
-            {/* RIGHT COLUMN: Kartu Anggota & Log */}
-            <div className="space-y-8">
-              {/* Kartu Anggota */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="bg-[#1e293b] p-4 flex items-center gap-3 text-white">
-                  <Hash size={14} />
-                  <span className="font-bold text-xs uppercase">Kartu Anggota</span>
-                </div>
-                <div className="p-8 flex flex-col items-center">
-                  {/* Visual ID Card */}
-                  <div className="w-full max-w-[260px] aspect-[3/4.2] bg-[#1e293b] rounded-xl relative overflow-hidden p-6 flex flex-col items-center border-b-8 border-yellow-400 shadow-xl">
-                    <div className="text-white text-[8px] font-bold tracking-widest uppercase mb-4 opacity-40">Kartu Anggota Perpustakaan</div>
-                    <div className="w-40 h-40 bg-white rounded-lg p-2 mb-4 shadow-inner flex items-center justify-center">
-                      <div className="text-[10px] text-gray-300 font-bold border-2 border-dashed border-gray-100 p-4 text-center">QR CODE SPACE</div>
-                    </div>
-                    <div className="text-center text-white">
-                      <h4 className="font-bold text-md uppercase tracking-tight">Ahmad Fajar</h4>
-                      <p className="text-[#38bdf8] text-[10px] font-bold mt-1">2021001</p>
-                      <p className="text-[#38bdf8] text-[10px] font-bold uppercase">PTIK A</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 w-full mt-6">
-                    <button className="bg-[#0ea5e9] hover:bg-blue-600 text-white py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-colors"><Eye size={14}/> Lihat</button>
-                    <button className="bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-colors"><Download size={14}/> Cetak</button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Log Aktivitas */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="bg-[#1e293b] p-4 flex items-center gap-3 text-white">
-                  <FaHistory size={14} />
-                  <span className="font-bold text-xs uppercase">Log Aktivitas Akun</span>
-                </div>
-                <div className="p-6 space-y-6">
-                  <ActivityItem icon={<FaLock />} title="Password Diperbarui" date="2025-11-05 14:30 WITA" color="text-orange-500" bgColor="bg-orange-50" />
-                  <ActivityItem icon={<FaHistory />} title="Login Berhasil" date="2025-11-07 10:00 WITA" color="text-blue-500" bgColor="bg-blue-50" />
-                </div>
-              </div>
-            </div>
           </div>
         </main>
       </div>
@@ -150,15 +161,17 @@ export default function ProfilAnggotaPage() {
   );
 }
 
-// Helper component for clean Activity Logs
-function ActivityItem({ icon, title, date, color, bgColor }: any) {
+function ProfileRow({ icon, label, value, isEditing, onChange }: ProfileRowProps) {
   return (
-    <div className="flex gap-4 items-start">
-      <div className={`p-2 ${bgColor} rounded-lg ${color}`}>{icon}</div>
-      <div>
-        <p className="text-sm font-bold text-[#1e293b]">{title}</p>
-        <p className="text-[10px] text-gray-400 font-bold mt-1">{date}</p>
-      </div>
+    <div className="flex justify-between items-center py-4 border-b border-gray-50 hover:bg-gray-50 px-2 rounded-lg gap-4">
+      <span className="text-gray-400 text-sm flex items-center gap-3 shrink-0">
+        <span className="text-orange-500">{icon}</span> {label}
+      </span>
+      {isEditing ? (
+        <input type="text" value={value} onChange={(e) => onChange(e.target.value)} className="bg-white border border-orange-200 rounded-md px-3 py-1 text-sm font-bold text-[#1e293b] focus:ring-2 focus:ring-orange-500 outline-none w-full max-w-[200px]" />
+      ) : (
+        <span className="font-bold text-[#1e293b] text-sm uppercase truncate">{value || '-'}</span>
+      )}
     </div>
   );
 }
