@@ -110,7 +110,7 @@ export default function DashboardPage() {
               <table className="w-full text-left">
                 <thead className="bg-gray-50">
                   <tr className="text-gray-500 text-xs font-bold uppercase tracking-wider border-b border-gray-200">
-                    <th className="px-6 py-4">Judul Buku</th>
+                    <th className="px-6 py-4">Judul Bukues</th>
                     <th className="px-6 py-4">Tanggal Pinjam</th>
                     <th className="px-6 py-4">Jatuh Tempo</th>
                     <th className="px-6 py-4 text-right">Status</th>
@@ -130,8 +130,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* RIWAYAT PEMINJAMAN TABLE HERE... */}
-          {/* (Rest of your table code remains the same) */}
+
 
         </main>
       </div>
