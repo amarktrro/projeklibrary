@@ -9,11 +9,31 @@ export default function Navbar() {
   const [name, setName] = useState('...');
 
   useEffect(() => {
-    // Get the name from localStorage instantly
+    // Get the name from localStorage instantly; if missing, try fetching profile
     const storedName = localStorage.getItem('user_name');
     if (storedName) {
       setName(storedName);
+      return;
     }
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    // If localStorage doesn't have the name but we have a token, fetch profile
+    (async () => {
+      try {
+        const resp = await axios.get('http://127.0.0.1:8000/api/user-profile', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const fetchedName = resp.data?.name || resp.data?.user?.name;
+        if (fetchedName) {
+          setName(fetchedName);
+          localStorage.setItem('user_name', fetchedName);
+        }
+      } catch (e) {
+        // silent fail — keep placeholder
+      }
+    })();
   }, []);
 
   const handleLogout = async () => {
@@ -45,18 +65,18 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-[#1e293b] text-white h-16 flex items-center justify-between px-6 shadow-md fixed w-full z-20">
+    <nav className="bg-[#172e5f] text-white h-16 flex items-center justify-between px-6 shadow-md fixed w-full z-20">
       <div className="flex items-center gap-3">
         <FaGraduationCap className="text-3xl text-orange-500" />
         <h1 className="text-xl font-bold tracking-wide">SIMPES JTIK</h1>
       </div>
 
       <div className="flex items-center gap-6">
-        <Link 
-          href="/user/dashboard/profile" 
-          className="flex items-center gap-2 hover:text-orange-400 transition-colors cursor-pointer group"
+        <Link
+          href="/user/dashboard/profile"
+          className="flex items-center gap-2 hover:text-orange-400 cursor-pointer"
         >
-          <div className="bg-white/10 p-1.5 rounded-full group-hover:bg-white/20 transition-all">
+          <div className="bg-white/10 p-1.5 rounded-full">
             <FaUser className="text-sm" />
           </div>
           <span className="font-medium text-sm">{name}</span>
@@ -64,7 +84,7 @@ export default function Navbar() {
 
         <button 
           onClick={handleLogout}
-          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-1.5 rounded-md text-sm font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-orange-900/20"
+          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-1.5 rounded-md text-sm font-bold flex items-center gap-2 shadow-lg shadow-orange-900/20"
         >
           <FaSignOutAlt /> Logout
         </button>

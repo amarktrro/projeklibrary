@@ -12,7 +12,7 @@ export default function TopNav() {
   };
 
   return (
-    <nav className="bg-[#1e293b] h-16 w-full flex items-center justify-between px-8 text-white shadow-md border-b border-white/5">
+    <nav className="bg-[#172e5f] h-16 w-full flex items-center justify-between px-8 text-white shadow-md border-b border-white/5\">
       {/* Brand Section */}
       <div className="flex items-center gap-3">
         <GraduationCap size={28} className="text-white" />

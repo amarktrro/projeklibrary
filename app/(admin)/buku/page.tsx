@@ -67,9 +67,9 @@ export default function KelolaBukuPage() {
   if (!isLoaded) return null;
 
   return (
-    <div className="p-6 bg-[#f8fafc] min-h-screen">
+    <div className="p-6 bg-white min-h-screen">
       {/* Header Banner - Matches Image_f21564 */}
-      <div className="bg-[#1e293b] rounded-[2rem] p-8 flex items-center justify-between text-white shadow-lg mb-8">
+      <div className="bg-[#172e5f] rounded-[2rem] p-8 flex items-center justify-between text-white shadow-lg mb-8">
         <div>
           <h2 className="text-2xl font-bold">Kelola Koleksi Buku</h2>
           <p className="text-slate-400 text-sm">Total {books.length} judul buku tersedia</p>
@@ -82,7 +82,7 @@ export default function KelolaBukuPage() {
               placeholder="Cari Judul / ID..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-[#2d3748] border-none rounded-xl pl-10 pr-4 py-3 w-64 focus:ring-2 focus:ring-orange-500 text-sm text-white outline-none"
+              className="bg-white border border-gray-300 rounded-xl pl-10 pr-4 py-3 w-64 focus:ring-2 focus:ring-orange-500 text-sm text-gray-800 outline-none"
             />
           </div>
           <button 
@@ -95,17 +95,17 @@ export default function KelolaBukuPage() {
       </div>
 
       {/* Table Section - Matches Screenshot 134349 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="bg-[#1e293b] px-6 py-4 flex items-center gap-2">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-300 overflow-hidden">
+        <div className="bg-gray-50 px-6 py-4 flex items-center gap-2">
             <div className="h-1 w-full bg-orange-500 absolute top-0 left-0"></div>
-            <h3 className="text-white font-bold flex items-center gap-2">
+            <h3 className="text-gray-800 font-bold flex items-center gap-2">
                 <span className="opacity-70">☰</span> Daftar Buku
             </h3>
         </div>
         
         <table className="w-full text-left">
-          <thead className="bg-white border-b border-slate-100">
-            <tr className="text-[#1e293b] text-xs font-black uppercase tracking-wider">
+          <thead className="bg-[#172e5f] border-b border-gray-300">
+            <tr className="text-white text-xs font-black uppercase tracking-wider">
               <th className="px-6 py-4">Kode</th>
               <th className="px-6 py-4">Judul</th>
               <th className="px-6 py-4">Penulis</th>
@@ -114,21 +114,21 @@ export default function KelolaBukuPage() {
               <th className="px-6 py-4 text-right">Aksi</th>
             </tr>
           </thead>
-          <tbody className="text-sm text-slate-600">
+          <tbody className="text-sm text-gray-700">
             {filteredBooks.map((book) => (
-              <tr key={book.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+              <tr key={book.id} className="border-b border-gray-300 hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4 font-medium">{book.id}</td>
-                <td className="px-6 py-4 font-bold text-[#1e293b]">{book.title}</td>
+                <td className="px-6 py-4 font-bold text-gray-800">{book.title}</td>
                 <td className="px-6 py-4">{book.author}</td>
                 <td className="px-6 py-4 text-center">
-                  <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-[10px] font-bold">
+                  <span className="bg-blue-900/30 text-blue-400 px-3 py-1 rounded-full text-[10px] font-bold border border-blue-700/30">
                     {book.category || "Umum"}
                   </span>
                 </td>
                 <td className="px-6 py-4 text-center font-bold">{book.stock}</td>
                 <td className="px-6 py-4">
                   <div className="flex justify-end gap-2">
-                    <button onClick={() => handleOpenEditModal(book)} className="p-2 bg-yellow-400 hover:bg-yellow-500 text-white rounded-lg transition-all">
+                    <button onClick={() => handleOpenEditModal(book)} className="p-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-all">
                       <Edit size={14} />
                     </button>
                     <button onClick={() => handleDelete(book.id)} className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all">
@@ -144,20 +144,20 @@ export default function KelolaBukuPage() {
 
       {/* Modal - Matches image_e5e243 */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[2rem] w-full max-w-md p-8 shadow-2xl relative overflow-hidden">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[2rem] w-full max-w-md p-8 shadow-2xl relative overflow-hidden border border-gray-300">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-[#1e293b]">{editingBook ? "Edit Buku" : "Tambah Buku Baru"}</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+              <h3 className="text-xl font-bold text-gray-800">{editingBook ? "Edit Buku" : "Tambah Buku Baru"}</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
             </div>
             <form onSubmit={handleSave} className="space-y-4">
-              <input required placeholder="Kode Buku / ID" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none text-[#1e293b]" />
-              <input required placeholder="Judul Buku" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none text-[#1e293b]" />
-              <input required placeholder="Pengarang" value={formData.author} onChange={e => setFormData({...formData, author: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none text-[#1e293b]" />
-              <input required placeholder="Kategori" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none text-[#1e293b]" />
-              <input required type="number" placeholder="Stok" value={formData.stock} onChange={e => setFormData({...formData, stock: parseInt(e.target.value) || 0})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none text-[#1e293b]" />
+              <input required placeholder="Kode Buku / ID" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none text-gray-800 placeholder:text-gray-500" />
+              <input required placeholder="Judul Buku" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none text-gray-800 placeholder:text-gray-500" />
+              <input required placeholder="Pengarang" value={formData.author} onChange={e => setFormData({...formData, author: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none text-gray-800 placeholder:text-gray-500" />
+              <input required placeholder="Kategori" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none text-gray-800 placeholder:text-gray-500" />
+              <input required type="number" placeholder="Stok" value={formData.stock} onChange={e => setFormData({...formData, stock: parseInt(e.target.value) || 0})} className="w-full p-4 bg-gray-50 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none text-gray-800 placeholder:text-gray-500" />
               
-              <button type="submit" className="w-full bg-[#f97316] py-4 text-white font-bold rounded-2xl hover:bg-orange-600 transition-all shadow-lg mt-2">
+              <button type="submit" className="w-full bg-orange-500 py-4 text-white font-bold rounded-2xl hover:bg-orange-600 transition-all shadow-lg mt-2">
                 Simpan Data
               </button>
             </form>

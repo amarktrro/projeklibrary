@@ -13,23 +13,23 @@ export default function LaporanLainnyaPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-4xl font-black text-[#1a2e5a] tracking-tight">Laporan Lainnya</h1>
-        <p className="text-slate-400 font-bold mt-2">Daftar laporan arsip dan operasional perpustakaan.</p>
+        <h1 className="text-4xl font-black text-gray-800 tracking-tight">Laporan Lainnya</h1>
+        <p className="text-gray-600 font-bold mt-2">Daftar laporan arsip dan operasional perpustakaan.</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4">
         {reports.map((report, index) => (
-          <div key={index} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
+          <div key={index} className="bg-white p-6 rounded-[2rem] border border-gray-300 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
             <div className="flex items-center gap-5">
-              <div className="bg-orange-100 text-orange-600 p-4 rounded-2xl">
+              <div className="bg-orange-100 text-orange-600 p-4 rounded-2xl border border-orange-200">
                 <FileText size={24} />
               </div>
               <div>
-                <h3 className="font-black text-slate-800 uppercase tracking-tight">{report.name}</h3>
-                <p className="text-xs text-slate-400 font-bold">{report.date} • {report.size}</p>
+                <h3 className="font-black text-gray-800 uppercase tracking-tight">{report.name}</h3>
+                <p className="text-xs text-gray-600 font-bold">{report.date} • {report.size}</p>
               </div>
             </div>
-            <button className="bg-[#1a2e5a] text-white p-4 rounded-2xl hover:bg-opacity-90 transition-all shadow-lg shadow-blue-900/10">
+            <button className="bg-orange-500 text-white p-4 rounded-2xl hover:bg-orange-600 transition-all shadow-lg">
               <Download size={20} />
             </button>
           </div>

@@ -45,8 +45,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#ea580c] p-4 font-sans">
-      <div className="bg-[#1e293b]/90 backdrop-blur-sm p-8 rounded-3xl shadow-2xl w-full max-w-4xl border border-white/5 text-white">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#0f172a] via-[#172e5f] to-[#ea580c] p-4 font-sans">
+      <div className="bg-[#172e5f]/90 backdrop-blur-sm p-8 rounded-3xl shadow-2xl w-full max-w-4xl border border-white/5 text-white">
         
         <div className="flex flex-col items-center mb-8">
           <div className="text-5xl text-white mb-2">

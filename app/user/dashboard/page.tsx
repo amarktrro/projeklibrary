@@ -9,6 +9,8 @@ import { FaBook, FaHistory, FaCheckCircle } from 'react-icons/fa';
 
 export default function DashboardPage() {
   const [userData, setUserData] = useState<any>(null);
+  const [borrowedBooks, setBorrowedBooks] = useState<any[]>([]);
+  const [borrowHistory, setBorrowHistory] = useState<any[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -35,11 +37,30 @@ export default function DashboardPage() {
       }
     };
 
+    const fetchBorrowedBooks = async () => {
+      try {
+        const response = await axios.get('http://127.0.0.1:8000/api/borrowed-books', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        });
+        setBorrowedBooks(response.data.active || []);
+        setBorrowHistory(response.data.history || []);
+      } catch (error) {
+        // Fallback to localStorage if API not available
+        const storedData = JSON.parse(localStorage.getItem('borrowed_books') || '{"active": [], "history": []}');
+        setBorrowedBooks(storedData.active || []);
+        setBorrowHistory(storedData.history || []);
+      }
+    };
+
     fetchProfile();
+    fetchBorrowedBooks();
   }, [router]);
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col font-sans overflow-hidden">
+    <div className="h-screen bg-white flex flex-col font-sans overflow-hidden">
       <Navbar />
       
       {/* Changed min-h-screen to h-full to fill the remaining space below the navbar */}
@@ -47,12 +68,12 @@ export default function DashboardPage() {
         <Sidebar />
 
         {/* FIXED: Changed p-8 to pt-2 px-8 pb-8 to remove the top gap */}
-        <main className="flex-1 md:ml-64 pt-2 px-8 pb-8 bg-gray-50 overflow-y-auto">
+        <main className="flex-1 md:ml-64 pt-2 px-8 pb-8 bg-white overflow-y-auto">
           
-          <div className="flex justify-between items-end mb-8">
+          <div className="flex justify-between items-end mb-8 mt-8">
             <div>
-              <h2 className="text-2xl font-bold text-[#1e293b]">Dashboard Anggota</h2>
-              <p className="text-sm text-gray-500 mt-1">
+              <h2 className="text-2xl font-bold text-gray-800">Dashboard Anggota</h2>
+              <p className="text-sm text-gray-600 mt-1">
                 {/* We use optional chaining ?. so it stays blank until loaded without crashing */}
                 Selamat datang, <span className="font-bold text-orange-600">{userData?.name || '...'}</span>!
               </p>
@@ -60,7 +81,7 @@ export default function DashboardPage() {
             
             <div className="text-right hidden sm:block">
               {userData?.nim && (
-                <span className="text-xs font-bold bg-[#1e293b] text-white px-3 py-1 rounded-full">
+                <span className="text-xs font-bold bg-[#172e5f] text-white px-3 py-1 rounded-full">
                   {userData.nim}
                 </span>
               )}
@@ -69,62 +90,108 @@ export default function DashboardPage() {
 
           {/* --- STATS CARDS --- */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-xl shadow-sm flex items-center gap-5 border border-gray-100 transition-transform hover:-translate-y-1 duration-300">
-              <div className="bg-[#1e293b] p-4 rounded-lg text-white text-2xl shadow-lg shadow-gray-200">
+            <div className="bg-white p-6 rounded-xl shadow-sm flex items-center gap-5 border border-gray-200 transition-transform hover:-translate-y-1 duration-300">
+              <div className="bg-blue-100 p-4 rounded-lg text-blue-600 text-2xl shadow-lg">
                 <FaBook />
               </div>
               <div>
-                <h3 className="text-3xl font-bold text-[#1e293b]">2</h3>
-                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Sedang Dipinjam</p>
+                <h3 className="text-3xl font-bold text-gray-800">2</h3>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Sedang Dipinjam</p>
               </div>
             </div>
             
-            <div className="bg-white p-6 rounded-xl shadow-sm flex items-center gap-5 border border-gray-100 transition-transform hover:-translate-y-1 duration-300">
-              <div className="bg-orange-500 p-4 rounded-lg text-white text-2xl shadow-lg shadow-orange-100">
+            <div className="bg-white p-6 rounded-xl shadow-sm flex items-center gap-5 border border-gray-200 transition-transform hover:-translate-y-1 duration-300">
+              <div className="bg-orange-500 p-4 rounded-lg text-white text-2xl shadow-lg">
                 <FaHistory />
               </div>
               <div>
-                <h3 className="text-3xl font-bold text-[#1e293b]">15</h3>
-                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Total Peminjaman</p>
+                <h3 className="text-3xl font-bold text-gray-800">15</h3>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Peminjaman</p>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm flex items-center gap-5 border border-gray-100 transition-transform hover:-translate-y-1 duration-300">
-              <div className="bg-[#a3e635] p-4 rounded-lg text-white text-2xl shadow-lg shadow-lime-100">
+            <div className="bg-white p-6 rounded-xl shadow-sm flex items-center gap-5 border border-gray-200 transition-transform hover:-translate-y-1 duration-300">
+              <div className="bg-[#a3e635] p-4 rounded-lg text-white text-2xl shadow-lg">
                 <FaCheckCircle />
               </div>
               <div>
-                <h3 className="text-3xl font-bold text-[#1e293b]">0</h3>
-                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Denda Aktif</p>
+                <h3 className="text-3xl font-bold text-gray-800">0</h3>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Denda Aktif</p>
               </div>
             </div>
           </div>
 
           {/* --- TABLES (Keep your design exactly as is) --- */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
-            <div className="bg-[#1e293b] px-6 py-4 flex items-center gap-2 border-b border-gray-200">
-              <FaBook className="text-orange-500" />
-              <h3 className="text-white font-bold tracking-wide text-sm uppercase">Buku yang Sedang Dipinjam</h3>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+            <div className="bg-[#172e5f] px-6 py-4 flex items-center gap-2 border-b-4 border-orange-500">
+              <FaBook className="text-white" />
+              <h3 className="text-white font-bold tracking-wide text-base">Buku yang Sedang Dipinjam</h3>
             </div>
             <div className="p-0">
               <table className="w-full text-left">
-                <thead className="bg-gray-50">
-                  <tr className="text-gray-500 text-xs font-bold uppercase tracking-wider border-b border-gray-200">
-                    <th className="px-6 py-4">Judul Bukues</th>
+                <thead>
+                  <tr className="text-gray-800 text-sm font-bold border-b-2 border-orange-500">
+                    <th className="px-6 py-4">Judul Buku</th>
                     <th className="px-6 py-4">Tanggal Pinjam</th>
                     <th className="px-6 py-4">Jatuh Tempo</th>
                     <th className="px-6 py-4 text-right">Status</th>
                   </tr>
                 </thead>
-                <tbody className="text-sm text-gray-700 divide-y divide-gray-100">
-                  <tr className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 font-bold text-[#1e293b]">Pemrograman Web Lanjut</td>
-                    <td className="px-6 py-4">10/01/2025</td>
-                    <td className="px-6 py-4 text-red-500 font-medium">15/01/2025</td>
-                    <td className="px-6 py-4 text-right">
-                      <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border border-green-200">Aktif</span>
-                    </td>
+                <tbody className="text-sm text-gray-800">
+                  {borrowedBooks.length > 0 ? (
+                    borrowedBooks.map((book: any, index: number) => (
+                      <tr key={index} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 font-medium">{book.title || book.judul_buku || '-'}</td>
+                        <td className="px-6 py-4">{book.borrow_date || book.tgl_pinjam || '-'}</td>
+                        <td className="px-6 py-4">{book.due_date || book.jatuh_tempo || '-'}</td>
+                        <td className="px-6 py-4 text-right">
+                          <span className="bg-green-600 text-white px-3 py-1 rounded-full text-[11px] font-bold">Aktif</span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr className="border-b border-gray-200">
+                      <td colSpan={4} className="px-6 py-4 text-center text-gray-500">Tidak ada buku yang sedang dipinjam</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* --- RIWAYAT PEMINJAMAN TABLE --- */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+            <div className="bg-[#172e5f] px-6 py-4 flex items-center gap-2 border-b-4 border-orange-500">
+              <FaHistory className="text-white text-lg" />
+              <h3 className="text-white font-bold tracking-wide text-base">Riwayat Peminjaman</h3>
+            </div>
+            <div className="p-0">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="text-gray-800 text-sm font-bold border-b-2 border-orange-500">
+                    <th className="px-6 py-4">Judul Buku</th>
+                    <th className="px-6 py-4">Tgl Pinjam</th>
+                    <th className="px-6 py-4">Tgl Kembali</th>
+                    <th className="px-6 py-4 text-right">Status</th>
                   </tr>
+                </thead>
+                <tbody className="text-sm text-gray-800">
+                  {borrowHistory.length > 0 ? (
+                    borrowHistory.map((book: any, index: number) => (
+                      <tr key={index} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 font-medium">{book.title || book.judul_buku || '-'}</td>
+                        <td className="px-6 py-4">{book.borrow_date || book.tgl_pinjam || '-'}</td>
+                        <td className="px-6 py-4">{book.return_date || book.tgl_kembali || '-'}</td>
+                        <td className="px-6 py-4 text-right">
+                          <span className="bg-gray-500 text-white px-3 py-1 rounded-full text-[11px] font-bold">Selesai</span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr className="border-b border-gray-200">
+                      <td colSpan={4} className="px-6 py-4 text-center text-gray-500">Tidak ada riwayat peminjaman</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -137,3 +204,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

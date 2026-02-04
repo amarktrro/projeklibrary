@@ -23,12 +23,12 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#7c2d12] flex items-center justify-center p-4 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#172e5f] to-[#7c2d12] flex items-center justify-center p-4 font-sans">
       
       <div className="flex flex-col md:flex-row gap-8 items-center max-w-5xl w-full">
         
         {/* --- Login Card --- */}
-        <div className="bg-[#1e293b]/60 backdrop-blur-md p-10 rounded-2xl w-full max-w-md shadow-2xl border border-white/5">
+        <div className="bg-[#172e5f]/60 backdrop-blur-md p-10 rounded-2xl w-full max-w-md shadow-2xl border border-white/5">
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               <div className="relative w-16 h-16">
@@ -36,7 +36,7 @@ export default function AdminLoginPage() {
                  <svg viewBox="0 0 24 24" className="fill-white" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 3L1 9L12 15L21 10.09V17H23V9M5 13.18V17.18L12 21L19 17.18V13.18L12 17L5 13.18Z" />
                  </svg>
-                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full border-2 border-[#1e293b]"></div>
+                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full border-2 border-[#172e5f]"></div>
               </div>
             </div>
             <h1 className="text-white text-3xl font-bold tracking-wider uppercase">SIMPES</h1>
@@ -77,8 +77,8 @@ export default function AdminLoginPage() {
                 onChange={(e) => setLoginRole(e.target.value)}
                 className="w-full bg-[#334155]/80 border border-white/10 rounded-lg py-3 px-4 text-sm text-white outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer"
               >
-                <option value="Admin/Petugas" className="bg-[#1e293b]">Admin/Petugas</option>
-                <option value="Anggota/Mahasiswa" className="bg-[#1e293b]">Anggota/Mahasiswa</option>
+                <option value="Admin/Petugas" className="bg-[#172e5f]">Admin/Petugas</option>
+                <option value="Anggota/Mahasiswa" className="bg-[#172e5f]">Anggota/Mahasiswa</option>
               </select>
             </div>
 
@@ -99,7 +99,7 @@ export default function AdminLoginPage() {
         <div className="bg-[#ffffff]/10 backdrop-blur-md border border-white/10 p-10 rounded-2xl w-full max-w-sm text-white hidden md:block">
           <div className="text-center mb-6">
             <div className="bg-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-4">
-              <Info size={24} className="text-[#1e293b]" />
+              <Info size={24} className="text-[#172e5f]" />
             </div>
             <h2 className="text-xl font-bold">Informasi Perpustakaan</h2>
           </div>
