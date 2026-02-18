@@ -6,15 +6,15 @@ import TopNav from "@/components/admin/TopNav";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-col min-h-screen bg-white">
+    <div className="flex flex-col min-h-screen bg-[#f5f5f5]">
       {/* Top Navbar - Fixed at the top with Navy Blue */}
       <div className="fixed top-0 w-full z-50">
         <TopNav />
       </div>
 
       <div className="flex flex-1 pt-16 min-h-screen">
-        {/* Sidebar - Fixed to the left with Navy Blue background */}
-        <aside className="w-72 fixed h-[calc(100vh-64px)] z-40 bg-[#172e5f] border-r border-gray-300\">
+        {/* Sidebar - Fixed to the left with white background */}
+        <aside className="w-72 fixed h-[calc(100vh-64px)] z-40 bg-white shadow-xl">
           <Sidebar />
         </aside>
 

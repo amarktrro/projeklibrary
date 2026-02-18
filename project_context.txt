@@ -1,0 +1,3822 @@
+Project Root: projectlibrary2
+
+--- PROJECT STRUCTURE ---
+app\(admin)\buku\page.tsx
+app\(admin)\dashboard\page.tsx
+app\(admin)\denda\page.tsx
+app\(admin)\guest-book\page.tsx
+app\(admin)\informasi\page.tsx
+app\(admin)\laporan\page.tsx
+app\(admin)\laporan-lainnya\page.tsx
+app\(admin)\layout.tsx
+app\(admin)\peminjaman\page.tsx
+app\(admin)\statistik\page.tsx
+app\(admin)\users\page.tsx
+app\admin-login\page.tsx
+app\components\navbar.tsx
+app\components\sidebar.tsx
+app\globals.css
+app\layout.tsx
+app\page.tsx
+app\register\page.tsx
+app\user\dashboard\cari-buku\page.tsx
+app\user\dashboard\informasi\page.tsx
+app\user\dashboard\page.tsx
+app\user\dashboard\profile\page.tsx
+components\admin\Sidebar.tsx
+components\admin\TopNav.tsx
+eslint.config.mjs
+next-env.d.ts
+next.config.ts
+package.json
+postcss.config.mjs
+README.md
+tsconfig.json
+
+--- FILE CONTENTS ---
+
+================================================================================
+File: app\(admin)\buku\page.tsx
+================================================================================
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { 
+  FaPlus, 
+  FaSearch, 
+  FaEdit, 
+  FaTrash, 
+  FaBook, 
+  FaList,
+  FaTimes,
+  FaSave
+} from "react-icons/fa";
+
+interface Book {
+  id: string;
+  title: string;
+  author: string;
+  category: string;
+  publisher: string;
+  year: string | number;
+  stock: number;    // FIXED TOTAL (The Limit)
+  available: number; // LIVE COUNT (Decreases on borrow)
+}
+
+const categoryPrefixes: Record<string, string> = {
+  "Pemrograman": "PWL",
+  "Jaringan": "JK",
+  "Database": "DB",
+  "Multimedia": "MM",
+  "Sistem Operasi": "SO",
+};
+
+export default function BukuPage() {
+  const [books, setBooks] = useState<Book[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("Semua Kategori");
+  const [manualCategory, setManualCategory] = useState("");
+  
+  const [currentBook, setCurrentBook] = useState<Partial<Book>>({
+    id: "",
+    title: "",
+    author: "",
+    category: "",
+    publisher: "",
+    year: 2024,
+    stock: 0,
+    available: 0
+  });
+
+  useEffect(() => {
+    const saved = localStorage.getItem("simpes_inventory");
+    if (saved) {
+      try {
+        setBooks(JSON.parse(saved));
+      } catch (e) {
+        setBooks([]);
+      }
+    }
+  }, []);
+
+  const saveToLocalStorage = (data: Book[]) => {
+    localStorage.setItem("simpes_inventory", JSON.stringify(data));
+    setBooks(data);
+  };
+
+  const handleCategoryChange = (cat: string) => {
+    if (cat === "Lainnya (Input Manual)") {
+      setCurrentBook({ ...currentBook, category: cat, id: "" });
+      return;
+    }
+    const prefix = categoryPrefixes[cat] || "BOOK";
+    const sameCategoryBooks = books.filter(b => String(b.id).startsWith(prefix));
+    let nextNumber = 1;
+    if (sameCategoryBooks.length > 0) {
+      const ids = sameCategoryBooks.map(b => {
+        const parts = String(b.id).split("-");
+        return parts.length > 1 ? parseInt(parts[1]) : 0;
+      });
+      nextNumber = Math.max(...ids) + 1;
+    }
+    const generatedId = `${prefix}-${String(nextNumber).padStart(3, '0')}`;
+    setCurrentBook({ ...currentBook, category: cat, id: generatedId });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const index = books.findIndex(b => String(b.id) === String(currentBook.id));
+    let updatedBooks = [...books];
+
+    const finalCategory = currentBook.category === "Lainnya (Input Manual)" 
+      ? manualCategory 
+      : currentBook.category;
+
+    const bookData = {
+      ...currentBook,
+      category: finalCategory,
+      stock: Number(currentBook.stock) || 0,
+      available: Number(currentBook.available) || 0
+    } as Book;
+
+    if (index !== -1) {
+      updatedBooks[index] = bookData;
+    } else {
+      updatedBooks.push(bookData);
+    }
+    
+    saveToLocalStorage(updatedBooks);
+    closeModal();
+  };
+
+  const openModal = (book?: Book) => {
+    if (book) {
+      setCurrentBook(book);
+      const isStandard = Object.keys(categoryPrefixes).includes(book.category);
+      if (!isStandard) {
+        setManualCategory(book.category);
+        setCurrentBook(prev => ({ ...prev, category: "Lainnya (Input Manual)" }));
+      }
+    } else {
+      setCurrentBook({ id: "", title: "", author: "", category: "", publisher: "", year: 2024, stock: 0, available: 0 });
+      setManualCategory("");
+    }
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setManualCategory("");
+  };
+
+  const handleDelete = (id: string | number) => {
+    if (confirm("Hapus buku ini?")) {
+      const updatedBooks = books.filter(book => book.id !== id);
+      saveToLocalStorage(updatedBooks);
+    }
+  };
+
+  const filteredBooks = books.filter(b => {
+    const matchesSearch = String(b.title || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          String(b.id || "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCat = selectedCategoryFilter === "Semua Kategori" || b.category === selectedCategoryFilter;
+    return matchesSearch && matchesCat;
+  });
+
+  return (
+    <div className="p-8 bg-[#f4f7fe] min-h-screen font-sans text-slate-800">
+      <div className="flex justify-between items-center mb-8">
+        <div className="flex items-center gap-3">
+          <div className="text-[#1e3a8a] text-3xl"><FaBook /></div>
+          <h1 className="text-4xl font-bold text-[#1e3a8a]">Kelola Buku</h1>
+        </div>
+        <button 
+          onClick={() => openModal()}
+          className="bg-[#f97316] hover:bg-orange-600 text-white px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg transition-all"
+        >
+          <FaPlus /> Tambah Buku Baru
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+        <div className="bg-[#1e293b] p-5 flex items-center gap-3 text-white">
+          <FaList className="text-xl" />
+          <h2 className="text-xl font-semibold">Daftar Buku</h2>
+        </div>
+
+        <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row gap-4">
+          <div className="flex-1">
+            <input 
+              type="text" 
+              placeholder="Cari buku..."
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-blue-400"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <select 
+            className="border border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:ring-1 focus:ring-blue-400 min-w-[200px]"
+            value={selectedCategoryFilter}
+            onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+          >
+            <option value="Semua Kategori">Semua Kategori</option>
+            {Object.keys(categoryPrefixes).map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b-2 border-orange-500">
+                <th className="px-6 py-4 font-bold text-gray-700">Kode</th>
+                <th className="px-6 py-4 font-bold text-gray-700">Judul</th>
+                <th className="px-6 py-4 font-bold text-gray-700">Penulis</th>
+                <th className="px-6 py-4 font-bold text-gray-700">Kategori</th>
+                <th className="px-6 py-4 font-bold text-gray-700 text-center">Stok</th>
+                <th className="px-6 py-4 font-bold text-gray-700 text-center text-blue-600">Tersedia</th>
+                <th className="px-6 py-4 font-bold text-gray-700 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredBooks.map((book) => (
+                <tr key={book.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 text-sm font-medium text-gray-600">{book.id}</td>
+                  <td className="px-6 py-4 text-sm font-semibold text-gray-800">{book.title}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{book.author}</td>
+                  <td className="px-6 py-4">
+                    <span className="bg-blue-600 text-white text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wider">
+                      {book.category}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-center text-sm font-bold text-gray-400">{book.stock}</td>
+                  <td className="px-6 py-4 text-center text-sm font-bold text-blue-600">{book.available}</td>
+                  <td className="px-6 py-4 text-center">
+                    <div className="flex justify-center gap-2">
+                      <button onClick={() => openModal(book)} className="bg-amber-400 hover:bg-amber-500 text-white p-2 rounded-lg"><FaEdit /></button>
+                      <button onClick={() => handleDelete(book.id)} className="bg-rose-500 hover:bg-rose-600 text-white p-2 rounded-lg"><FaTrash /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-3xl shadow-2xl overflow-hidden border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-slate-50">
+              <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
+                <FaEdit size={14} /> {currentBook.id ? "Edit Buku" : "Tambah Buku Baru"}
+              </h3>
+              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600"><FaTimes size={24} /></button>
+            </div>
+            
+            <form onSubmit={handleSubmit} className="p-8 space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-gray-700">Kode Buku</label>
+                  <input 
+                    readOnly={currentBook.category !== "Lainnya (Input Manual)"}
+                    placeholder="Auto-generated"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-md bg-gray-50 outline-none" 
+                    value={currentBook.id} 
+                    onChange={(e) => setCurrentBook({...currentBook, id: e.target.value})}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-gray-700">Kategori</label>
+                  <select 
+                    required 
+                    className="w-full px-4 py-2 border border-gray-200 rounded-md outline-none focus:ring-1 focus:ring-blue-400"
+                    value={currentBook.category}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
+                  >
+                    <option value="" disabled>Pilih Kategori</option>
+                    {Object.keys(categoryPrefixes).map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                    <option value="Lainnya (Input Manual)">Lainnya (Input Manual)</option>
+                  </select>
+                  {currentBook.category === "Lainnya (Input Manual)" && (
+                    <input 
+                      placeholder="Masukkan Nama Kategori Baru"
+                      className="mt-2 w-full px-4 py-2 border border-gray-200 rounded-md outline-none focus:ring-1 focus:ring-blue-400"
+                      value={manualCategory}
+                      onChange={(e) => setManualCategory(e.target.value)}
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-semibold text-gray-700">Judul Buku</label>
+                <input required className="w-full px-4 py-2 border border-gray-200 rounded-md outline-none" value={currentBook.title} onChange={(e) => setCurrentBook({...currentBook, title: e.target.value})} />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-semibold text-gray-700">Penulis</label>
+                <input required className="w-full px-4 py-2 border border-gray-200 rounded-md outline-none" value={currentBook.author} onChange={(e) => setCurrentBook({...currentBook, author: e.target.value})} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-gray-700">Penerbit</label>
+                  <input required className="w-full px-4 py-2 border border-gray-200 rounded-md outline-none" value={currentBook.publisher} onChange={(e) => setCurrentBook({...currentBook, publisher: e.target.value})} />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-gray-700">Tahun Terbit</label>
+                  <input type="number" required className="w-full px-4 py-2 border border-gray-200 rounded-md outline-none" value={currentBook.year} onChange={(e) => setCurrentBook({...currentBook, year: e.target.value})} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-gray-700">Stok (Limit Maksimal)</label>
+                  <input 
+                    type="number" 
+                    required 
+                    className="w-full px-4 py-2 border border-gray-200 rounded-md outline-none focus:ring-1 focus:ring-blue-400" 
+                    value={currentBook.stock} 
+                    onChange={(e) => setCurrentBook({...currentBook, stock: parseInt(e.target.value) || 0})} 
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-blue-600">Tersedia (Sisa di Rak)</label>
+                  <input 
+                    type="number" 
+                    required 
+                    className="w-full px-4 py-2 border border-blue-200 rounded-md outline-none focus:ring-2 focus:ring-blue-400" 
+                    value={currentBook.available} 
+                    onChange={(e) => setCurrentBook({...currentBook, available: parseInt(e.target.value) || 0})} 
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3">
+                <button type="button" onClick={closeModal} className="px-8 py-2.5 bg-slate-500 text-white rounded-md font-bold">Batal</button>
+                <button type="submit" className="px-8 py-2.5 bg-[#f97316] hover:bg-orange-600 text-white rounded-md font-bold flex items-center gap-2 shadow-lg transition-all">
+                  <FaSave /> Simpan Buku
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+================================================================================
+File: app\(admin)\dashboard\page.tsx
+================================================================================
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { 
+  FaBook, 
+  FaUsers, 
+  FaHandshake, 
+  FaExclamationTriangle,
+  FaChartLine,
+  FaHistory,
+  FaTachometerAlt,
+  FaSyncAlt,
+  FaUserPlus
+} from "react-icons/fa";
+
+// --- NEW: Interface for Late Loan Data ---
+interface LateLoan {
+  nim: string;
+  name: string;
+  title: string;
+  borrow_date: string;
+  due_date: string;
+  late_days: number;
+  fine: number;
+}
+
+interface DashboardStats {
+  totalBooks: number;
+  totalUsers: number;
+  totalTransactions: number;
+  activeLoans: number;
+}
+
+export default function DashboardPage() {
+  const [stats, setStats] = useState<DashboardStats>({
+    totalBooks: 0,
+    totalUsers: 0,
+    totalTransactions: 0,
+    activeLoans: 0,
+  });
+  // --- NEW: State for Late Loans ---
+  const [lateLoans, setLateLoans] = useState<LateLoan[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Helper to parse dates in DD/MM/YYYY or YYYY-MM-DD format
+  const parseDate = (dateStr: string) => {
+    if (!dateStr) return new Date();
+    if (dateStr.includes('/')) {
+      const [day, month, year] = dateStr.split('/');
+      return new Date(Number(year), Number(month) - 1, Number(day));
+    }
+    return new Date(dateStr);
+  };
+
+  useEffect(() => {
+    const loadDashboardData = () => {
+      setLoading(true);
+      try {
+        const savedInventory = JSON.parse(localStorage.getItem("simpes_inventory") || "[]");
+        const savedUsers = JSON.parse(localStorage.getItem("simpes_users") || "[]");
+        const loanData = JSON.parse(localStorage.getItem("borrowed_books") || '{"active": [], "history": []}');
+        
+        // Simulation Date: 2026-02-12
+        const today = new Date("2026-02-12");
+        const activeList = loanData.active || [];
+        
+        // --- NEW: Logic to process late loans ---
+        const processedLateLoans: LateLoan[] = [];
+        activeList.forEach((loan: any) => {
+          const dueDateStr = loan.due_date || loan.jatuh_tempo;
+          if (!dueDateStr) return;
+          
+          const dueDate = parseDate(dueDateStr);
+
+          if (today > dueDate) {
+            const timeDiff = today.getTime() - dueDate.getTime();
+            const lateDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+            const fine = lateDays * 1000; // Assumption: Rp 1.000 per day
+
+            processedLateLoans.push({
+              nim: loan.nim || loan.user_id || "-",
+              name: loan.name || loan.user_name || "Anggota",
+              title: loan.title || loan.book_title || loan.judul_buku || "-",
+              borrow_date: loan.borrow_date || loan.tgl_pinjam || "-",
+              due_date: dueDateStr,
+              late_days: lateDays,
+              fine: fine
+            });
+          }
+        });
+
+        setLateLoans(processedLateLoans);
+
+        setStats({
+          totalBooks: savedInventory.length,
+          totalUsers: savedUsers.length || 124,
+          totalTransactions: activeList.length,
+          activeLoans: processedLateLoans.length, // Use the count of processed late loans
+        });
+      } catch (err) {
+        console.error("Error loading local data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboardData();
+    window.addEventListener("storage", loadDashboardData);
+    return () => window.removeEventListener("storage", loadDashboardData);
+  }, []);
+
+  const statCards = [
+    { title: "Total Buku", value: stats.totalBooks.toLocaleString(), icon: <FaBook />, color: "bg-[#1e293b]" },
+    { title: "Total Anggota", value: stats.totalUsers.toLocaleString(), icon: <FaUsers />, color: "bg-[#f97316]" },
+    { title: "Sedang Dipinjam", value: stats.totalTransactions, icon: <FaHandshake />, color: "bg-[#a3b18a]" },
+    { title: "Terlambat", value: stats.activeLoans, icon: <FaExclamationTriangle />, color: "bg-[#c1121f]" },
+  ];
+
+  return (
+    <div className="p-8 space-y-8 bg-[#f8fafc] min-h-screen">
+      {/* Header */}
+      <div className="flex justify-between items-end">
+        <div className="flex items-center gap-3">
+          <div className="bg-[#172e5f] p-2 rounded-full text-white">
+            <FaTachometerAlt size={20} />
+          </div>
+          <h1 className="text-3xl font-bold text-[#172e5f] tracking-tight">Dashboard Admin</h1>
+        </div>
+        <p className="text-gray-400 text-sm font-medium">Selamat datang di sistem informasi perpustakaan JTIK</p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {statCards.map((card, idx) => (
+          <div key={idx} className="bg-white p-6 rounded-2xl shadow-sm flex items-center gap-6 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className={`${card.color} p-5 rounded-2xl text-white text-3xl shadow-lg shadow-gray-200`}>
+              {card.icon}
+            </div>
+            <div>
+              <h3 className="text-3xl font-bold text-[#172e5f]">{loading ? "..." : card.value}</h3>
+              <p className="text-sm text-gray-400 font-bold uppercase tracking-tight">{card.title}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Section: Statistik Peminjaman */}
+        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-[#172e5f] p-4 text-white font-bold flex items-center gap-3">
+            <FaChartLine />
+            <span className="text-sm uppercase tracking-wider">Statistik Peminjaman</span>
+          </div>
+          <div className="p-10 flex flex-col items-center justify-center min-h-[350px]">
+            <div className="w-full h-full relative flex items-end justify-between gap-2 px-4 border-b border-l border-gray-100">
+               <div className="w-full h-48 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-300">
+                 <FaChartLine size={48} className="mb-2 opacity-20" />
+                 <p className="text-xs font-bold uppercase tracking-widest">Chart Visualization Area</p>
+               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Section: Aktivitas Terbaru */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-[#172e5f] p-4 text-white font-bold flex items-center gap-3">
+            <FaHistory />
+            <span className="text-sm uppercase tracking-wider">Aktivitas Terbaru</span>
+          </div>
+          <div className="p-6 divide-y divide-gray-50">
+            <div className="py-4 first:pt-0 flex items-center gap-5">
+              <div className="p-3 bg-orange-50 text-[#f97316] rounded-xl text-xl"><FaBook /></div>
+              <div>
+                <p className="text-sm font-bold text-[#172e5f]">Buku Dipinjam</p>
+                <p className="text-[11px] text-gray-400 font-medium">Admin • Baru Saja</p>
+              </div>
+            </div>
+            <div className="py-4 flex items-center gap-5">
+              <div className="p-3 bg-orange-50 text-[#f97316] rounded-xl text-xl"><FaSyncAlt /></div>
+              <div>
+                <p className="text-sm font-bold text-[#172e5f]">Buku Dikembalikan</p>
+                <p className="text-[11px] text-gray-400 font-medium">Siswa • 10 menit lalu</p>
+              </div>
+            </div>
+            <div className="py-4 last:pb-0 flex items-center gap-5">
+              <div className="p-3 bg-orange-50 text-[#f97316] rounded-xl text-xl"><FaUserPlus /></div>
+              <div>
+                <p className="text-sm font-bold text-[#172e5f]">Anggota Baru</p>
+                <p className="text-[11px] text-gray-400 font-medium">User • 1 jam lalu</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Section: Peminjaman Terlambat (UPDATED) */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+        <div className="bg-[#172e5f] p-4 text-white font-bold flex items-center gap-3 border-b-4 border-orange-500">
+          <FaExclamationTriangle />
+          <span className="text-sm uppercase tracking-wider">Peminjaman Terlambat</span>
+        </div>
+        
+        {/* --- NEW: Table for Late Loans --- */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-orange-500 text-[#172e5f]">
+                <th className="px-6 py-4 text-sm font-bold uppercase tracking-wider">NIM</th>
+                <th className="px-6 py-4 text-sm font-bold uppercase tracking-wider">Nama</th>
+                <th className="px-6 py-4 text-sm font-bold uppercase tracking-wider">Judul Buku</th>
+                <th className="px-6 py-4 text-sm font-bold uppercase tracking-wider">Tgl Pinjam</th>
+                <th className="px-6 py-4 text-sm font-bold uppercase tracking-wider">Jatuh Tempo</th>
+                <th className="px-6 py-4 text-sm font-bold uppercase tracking-wider text-center">Terlambat</th>
+                <th className="px-6 py-4 text-sm font-bold uppercase tracking-wider text-right">Denda</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {lateLoans.length > 0 ? (
+                lateLoans.map((loan, index) => (
+                  <tr key={index} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 text-sm font-medium text-gray-600">{loan.nim}</td>
+                    <td className="px-6 py-4 text-sm font-bold text-gray-800">{loan.name}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-blue-900 italic">{loan.title}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{loan.borrow_date}</td>
+                    <td className="px-6 py-4 text-sm text-red-600 font-bold">{loan.due_date}</td>
+                    <td className="px-6 py-4 text-center">
+                      <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-red-600 text-white">
+                        {loan.late_days} hari
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm font-bold text-gray-800 text-right">
+                      Rp {loan.fine.toLocaleString('id-ID')}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-gray-400 italic font-medium">
+                    Tidak ada data peminjaman terlambat untuk saat ini.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+================================================================================
+File: app\(admin)\denda\page.tsx
+================================================================================
+"use client";
+
+import React, { useState } from "react";
+import { Wallet, Calculator } from "lucide-react";
+
+export default function KelolaDendaPage() {
+  // Using string state to better manage manual typing of decimals
+  const [days, setDays] = useState<string>("");
+
+  // Calculation Logic: 1 day = 1,000 Rp. 
+  const fineAmount = days ? parseFloat(days) * 1000 : 0;
+
+  // Currency Formatter for Indonesian Rupiah
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(value).replace("IDR", "Rp");
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+
+    // 1. Remove any character that is not a digit (0-9) or a decimal point (.)
+    // This prevents letters, symbols, and negative signs (-)
+    value = value.replace(/[^0-9.]/g, '');
+
+    // 2. Prevent multiple decimal points (only allow the first one)
+    const parts = value.split('.');
+    if (parts.length > 2) {
+      value = parts[0] + '.' + parts.slice(1).join('');
+    }
+
+    setDays(value);
+  };
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Header Stat Card */}
+      <div className="bg-white rounded-[2.5rem] p-10 flex items-center justify-between text-gray-800 shadow-lg border border-gray-300">
+        <div>
+          <h2 className="text-3xl font-black tracking-tight">Kelola Denda & Keuangan</h2>
+          <p className="text-gray-600 font-bold text-sm">Monitoring kas denda keterlambatan buku</p>
+        </div>
+        <div className="bg-gray-50 px-6 py-4 rounded-2xl border border-gray-300 flex items-center gap-4">
+          <Wallet className="text-orange-500" />
+          <div>
+            <p className="text-[8px] font-black text-gray-600 uppercase">Total Dana Kas</p>
+            <p className="text-lg font-black text-gray-800">Rp 2.450.000</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* --- Restricted Fine Calculator --- */}
+        <div className="bg-white rounded-[3rem] p-10 text-gray-800 border border-gray-300 shadow-xl">
+          <div className="flex items-center gap-4 mb-8">
+            <Calculator className="text-orange-500" />
+            <h3 className="text-xl font-black">Kalkulator Denda</h3>
+          </div>
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest ml-1">
+                Masukkan Jumlah Hari
+              </label>
+              <input 
+                type="text" 
+                inputMode="decimal"
+                value={days}
+                onChange={handleInputChange}
+                placeholder=""
+                className="w-full bg-gray-50 border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-orange-500 transition-all text-gray-800 font-bold text-lg" 
+              />
+            </div>
+            
+            <div className="pt-6 border-t border-gray-300">
+              <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-2">Total Tagihan:</p>
+              <p className="text-6xl font-black text-orange-500 transition-all">
+                {formatCurrency(fineAmount)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* --- Latest Transactions Table (Empty State) --- */}
+        <div className="bg-white rounded-[3rem] overflow-hidden border border-gray-300 shadow-sm flex flex-col min-h-[400px]">
+          <div className="bg-gray-50 p-6 text-gray-800 font-black text-sm uppercase tracking-widest">
+            Riwayat Transaksi
+          </div>
+          <div className="p-8 flex-1 flex flex-col items-center justify-center text-center space-y-2">
+            <div className="bg-gray-100 p-4 rounded-full border border-gray-300">
+               <Wallet className="text-gray-400" size={32} />
+            </div>
+            <p className="text-gray-600 font-bold text-sm">Belum ada riwayat transaksi</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
+
+================================================================================
+File: app\(admin)\guest-book\page.tsx
+================================================================================
+"use client";
+
+import React from "react";
+import { QrCode } from "lucide-react";
+
+export default function GuestBook() {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+      {/* Manual Entry Card */}
+      <div className="bg-white rounded-[3.5rem] p-12 text-gray-800 shadow-2xl border border-gray-300">
+        <h3 className="text-3xl font-black mb-10 tracking-tight">Input Kehadiran Manual</h3>
+        <div className="space-y-8">
+          <div className="space-y-3">
+            <label className="text-[10px] font-black uppercase text-gray-600 tracking-widest ml-2">Identitas Pengunjung</label>
+            <input 
+              type="text" 
+              placeholder="NIM / NIDN" 
+              className="w-full bg-gray-50 border border-gray-300 rounded-2xl px-8 py-5 text-gray-800 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all" 
+            />
+          </div>
+          <button className="w-full bg-orange-500 hover:bg-orange-600 py-6 rounded-2xl font-black text-xl uppercase tracking-[0.2em] transition-all shadow-xl">
+            SUBMIT
+          </button>
+        </div>
+      </div>
+
+      {/* QR Visualization Card */}
+      <div className="bg-white rounded-[3.5rem] p-12 border border-gray-300 flex flex-col items-center justify-center text-center shadow-sm">
+        <div className="w-72 h-72 bg-gray-50 rounded-[3rem] border-2 border-dashed border-gray-300 flex items-center justify-center mb-10">
+          <QrCode size={140} className="text-gray-400" />
+        </div>
+        <h3 className="text-2xl font-black text-gray-800">Scan QR Code Kehadiran</h3>
+        <p className="text-gray-600 font-bold mt-3">Tunjukkan KTM Anda ke arah scanner</p>
+      </div>
+    </div>
+  );
+}
+
+
+================================================================================
+File: app\(admin)\informasi\page.tsx
+================================================================================
+"use client";
+
+import React from "react";
+import { Mail } from "lucide-react";
+
+export default function Informasi() {
+  return (
+    <div className="space-y-10">
+      <div>
+        <h1 className="text-4xl font-black text-gray-800 tracking-tight">Informasi Layanan</h1>
+        <p className="text-gray-600 font-bold mt-2">Kontak resmi bantuan teknis perpustakaan JTIK.</p>
+      </div>
+
+      <div className="bg-white rounded-[3rem] p-12 text-gray-800 shadow-xl inline-block border border-gray-300">
+        <div className="flex items-center gap-4 mb-6">
+          <Mail className="text-orange-500" size={24} />
+          <span className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em]">Email Layanan</span>
+        </div>
+        <p className="text-3xl font-black underline decoration-gray-300 underline-offset-[12px] cursor-pointer hover:text-orange-500 transition-colors">
+          perpustakaanjtikunm@gmail.com
+        </p>
+      </div>
+    </div>
+  );
+}
+
+
+================================================================================
+File: app\(admin)\laporan\page.tsx
+================================================================================
+"use client";
+
+import React from "react";
+import { Download } from "lucide-react";
+
+export default function LaporanKeuangan() {
+  return (
+    <div className="space-y-8">
+      <div className="bg-white rounded-[2.5rem] p-10 flex items-center justify-between text-gray-800">
+        <h2 className="text-3xl font-black tracking-tight">Laporan Keuangan</h2>
+        <button className="bg-orange-500/10 hover:bg-orange-500/20 px-6 py-3 rounded-xl font-bold text-xs uppercase flex items-center gap-2 transition-all border border-orange-700/30 text-orange-400">
+          <Download size={18} /> Export Laporan
+        </button>
+      </div>
+
+      <div className="bg-white rounded-[3rem] overflow-hidden border border-gray-300 shadow-sm">
+        <table className="w-full text-left">
+          <thead className="bg-[#172e5f] text-white">
+            <tr>
+              <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Tanggal</th>
+              <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Keterangan</th>
+              <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Debit</th>
+              <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em] text-right">Saldo</th>
+            </tr>
+          </thead>
+          <tbody className="text-sm font-bold text-gray-700">
+            <tr className="border-b border-gray-300">
+              <td className="px-10 py-8">05/01/2024</td>
+              <td className="px-10 py-8 font-black text-gray-800">Denda Keterlambatan - User #12</td>
+              <td className="px-10 py-8 text-emerald-400">Rp 5.000</td>
+              <td className="px-10 py-8 text-right font-black text-white">Rp 2.450.000</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr className="bg-gray-100 border-t border-gray-300">
+              <td colSpan={3} className="px-10 py-10 text-right font-black text-gray-600 uppercase text-xs tracking-widest">Total Dana Kas</td>
+              <td className="px-10 py-10 text-right text-4xl font-black text-orange-500">Rp 2.450.000</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+
+================================================================================
+File: app\(admin)\laporan-lainnya\page.tsx
+================================================================================
+"use client";
+
+import React from "react";
+import { FileText, Download } from "lucide-react";
+
+export default function LaporanLainnyaPage() {
+  const reports = [
+    { name: "Laporan Kunjungan Bulanan", date: "Januari 2026", size: "1.2 MB" },
+    { name: "Laporan Buku Rusak", date: "Desember 2025", size: "850 KB" },
+    { name: "Laporan Pengadaan Buku Baru", date: "November 2025", size: "2.1 MB" },
+  ];
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-4xl font-black text-gray-800 tracking-tight">Laporan Lainnya</h1>
+        <p className="text-gray-600 font-bold mt-2">Daftar laporan arsip dan operasional perpustakaan.</p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4">
+        {reports.map((report, index) => (
+          <div key={index} className="bg-white p-6 rounded-[2rem] border border-gray-300 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-5">
+              <div className="bg-orange-100 text-orange-600 p-4 rounded-2xl border border-orange-200">
+                <FileText size={24} />
+              </div>
+              <div>
+                <h3 className="font-black text-gray-800 uppercase tracking-tight">{report.name}</h3>
+                <p className="text-xs text-gray-600 font-bold">{report.date} • {report.size}</p>
+              </div>
+            </div>
+            <button className="bg-orange-500 text-white p-4 rounded-2xl hover:bg-orange-600 transition-all shadow-lg">
+              <Download size={20} />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+================================================================================
+File: app\(admin)\layout.tsx
+================================================================================
+"use client";
+
+import React from "react";
+import Sidebar from "@/components/admin/Sidebar";
+import TopNav from "@/components/admin/TopNav";
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col min-h-screen bg-[#f5f5f5]">
+      {/* Top Navbar - Fixed at the top with Navy Blue */}
+      <div className="fixed top-0 w-full z-50">
+        <TopNav />
+      </div>
+
+      <div className="flex flex-1 pt-16 min-h-screen">
+        {/* Sidebar - Fixed to the left with white background */}
+        <aside className="w-72 fixed h-[calc(100vh-64px)] z-40 bg-white shadow-xl">
+          <Sidebar />
+        </aside>
+
+        {/* Main Content Area - This is where your page.tsx code appears */}
+        <main className="flex-1 ml-72 p-10">
+          <div className="bg-white rounded-[3.5rem] min-h-full shadow-sm border border-gray-200 p-12">
+            {children}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+
+================================================================================
+File: app\(admin)\peminjaman\page.tsx
+================================================================================
+"use client";
+
+import React, { useState, useEffect, useCallback } from "react";
+import { 
+  FaUndo, FaSearch, FaBookOpen, FaBook, FaCheckCircle, 
+  FaExclamationTriangle, FaHandshake, FaSync, FaHistory
+} from "react-icons/fa";
+import Navbar from '../../components/navbar';
+
+export default function AdminPeminjaman() {
+  const [activeBorrows, setActiveBorrows] = useState<any[]>([]);
+  const [borrowHistory, setBorrowHistory] = useState<any[]>([]);
+  const [inventory, setInventory] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("Semua Status");
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
+  const CURRENT_DATE_STR = "2026-02-12";
+
+  const loadData = useCallback(() => {
+    const savedInv = localStorage.getItem("simpes_inventory");
+    if (savedInv) setInventory(JSON.parse(savedInv));
+
+    const storedData = localStorage.getItem('borrowed_books');
+    if (storedData) {
+      const parsed = JSON.parse(storedData);
+      setActiveBorrows(parsed.active || []);
+      setBorrowHistory(parsed.history || []);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+    window.addEventListener("storage", loadData);
+    return () => window.removeEventListener("storage", loadData);
+  }, [loadData]);
+
+  const parseCustomDate = (dateStr: string) => {
+    if (!dateStr) return new Date();
+    if (dateStr.includes('/')) {
+      const [day, month, year] = dateStr.split('/');
+      return new Date(Number(year), Number(month) - 1, Number(day), 23, 59, 59);
+    }
+    return new Date(dateStr);
+  };
+
+  const getBusinessDaysCount = (startDate: Date, endDate: Date) => {
+    let count = 0;
+    let curDate = new Date(startDate);
+    curDate.setDate(curDate.getDate() + 1);
+    while (curDate <= endDate) {
+      const dayOfWeek = curDate.getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) count++;
+      curDate.setDate(curDate.getDate() + 1);
+    }
+    return count;
+  };
+
+  const getStatus = (dueDateStr: string) => {
+    const today = new Date(CURRENT_DATE_STR);
+    const dueDate = parseCustomDate(dueDateStr);
+    return today > dueDate ? "TERLAMBAT" : "AKTIF";
+  };
+
+  const handleReturnConfirm = () => {
+    if (selectedIndex === null) return;
+    const bookToReturn = activeBorrows[selectedIndex];
+    const dueDate = parseCustomDate(bookToReturn.due_date || bookToReturn.jatuh_tempo);
+    const returnDate = new Date(CURRENT_DATE_STR);
+    
+    let denda = "-";
+    let statusText = "Tepat Waktu";
+    let isLate = false;
+
+    if (returnDate > dueDate) {
+      const lateDays = getBusinessDaysCount(dueDate, returnDate);
+      if (lateDays > 0) {
+        denda = `Rp ${(lateDays * 1000).toLocaleString('id-ID')}`;
+        statusText = `Terlambat ${lateDays} hari`;
+        isLate = true;
+      }
+    }
+
+    const updatedInventory = inventory.map(item => {
+      if (item.id === bookToReturn.book_id || item.title === (bookToReturn.title || bookToReturn.book_title)) {
+        return { ...item, available: (item.available || 0) + 1 };
+      }
+      return item;
+    });
+    localStorage.setItem('simpes_inventory', JSON.stringify(updatedInventory));
+
+    const updatedActive = activeBorrows.filter((_, i) => i !== selectedIndex);
+    const newHistoryEntry = {
+      ...bookToReturn,
+      return_date: CURRENT_DATE_STR,
+      tgl_kembali: CURRENT_DATE_STR,
+      denda_display: denda,
+      history_status: statusText,
+      is_late_return: isLate
+    };
+    const updatedHistory = [newHistoryEntry, ...borrowHistory];
+
+    localStorage.setItem('borrowed_books', JSON.stringify({
+      active: updatedActive,
+      history: updatedHistory
+    }));
+
+    loadData();
+    setIsModalOpen(false);
+    setSelectedIndex(null);
+  };
+
+  const filteredData = activeBorrows.filter(item => {
+    const title = item.title || item.book_title || item.judul_buku || "";
+    const name = item.name || item.user_name || "Siswa";
+    const status = getStatus(item.due_date || item.jatuh_tempo);
+    const matchesSearch = title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = statusFilter === "Semua Status" || status === statusFilter;
+    return matchesSearch && matchesFilter;
+  });
+
+  return (
+    <div className="p-8 bg-gray-50 min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* Header Section */}
+        <div className="flex justify-between items-center mb-10">
+          <div className="flex items-center gap-4">
+            <div className="bg-[#172e5f] p-4 rounded-2xl text-white shadow-xl">
+              <FaHandshake size={28} />
+            </div>
+            <div>
+              <h1 className="text-3xl font-black text-[#172e5f] uppercase tracking-tight">Admin Peminjaman</h1>
+              <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Sistem Manajemen Pengembalian & Denda</p>
+            </div>
+          </div>
+          <button onClick={loadData} className="flex items-center gap-2 bg-white border px-5 py-2.5 rounded-xl text-xs font-black text-gray-500 shadow-sm">
+            <FaSync /> REFRESH DATA
+          </button>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+          <div className="bg-white p-7 rounded-3xl shadow-sm border flex items-center gap-6">
+            <div className="bg-blue-50 p-5 rounded-2xl text-blue-600"><FaBook size={30} /></div>
+            <div>
+              <p className="text-4xl font-black text-gray-800">{activeBorrows.length}</p>
+              <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Sedang Dipinjam</p>
+            </div>
+          </div>
+          
+          {/* UPDATED: Terlambat Stat Card with FaExclamationTriangle (Dashboard Match) */}
+          <div className="bg-white p-7 rounded-3xl shadow-sm border flex items-center gap-6">
+            <div className="bg-red-50 p-5 rounded-2xl text-red-600">
+              <FaExclamationTriangle size={30} />
+            </div>
+            <div>
+              <p className="text-4xl font-black text-gray-800">
+                {activeBorrows.filter(b => getStatus(b.due_date || b.jatuh_tempo) === "TERLAMBAT").length}
+              </p>
+              <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Terlambat</p>
+            </div>
+          </div>
+
+          <div className="bg-white p-7 rounded-3xl shadow-sm border flex items-center gap-6">
+            <div className="bg-green-50 p-5 rounded-2xl text-green-600"><FaCheckCircle size={30} /></div>
+            <div>
+              <p className="text-4xl font-black text-gray-800">{borrowHistory.length}</p>
+              <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Total Selesai</p>
+            </div>
+          </div>
+        </div>
+
+        {/* --- TABLE 1: DAFTAR PEMINJAMAN AKTIF --- */}
+        <div className="bg-white rounded-3xl shadow-xl border overflow-hidden mb-12">
+          <div className="bg-[#172e5f] p-6 flex flex-col md:flex-row justify-between items-center gap-4 border-b-4 border-orange-500">
+            <h3 className="text-white font-bold flex items-center gap-3 tracking-wider text-base">
+              <FaBookOpen className="text-white" size={20} /> Daftar Peminjaman Aktif
+            </h3>
+            <div className="flex gap-3 w-full md:w-auto">
+              <div className="relative flex-1 md:w-80">
+                <input 
+                  type="text" 
+                  placeholder="Cari Nama atau Judul..." 
+                  className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 pl-10 text-white text-sm focus:outline-none placeholder:text-white/50"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <FaSearch className="absolute left-3 top-3 text-white/50" size={14} />
+              </div>
+              <select className="bg-white rounded-xl px-4 py-2 text-xs font-bold" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <option>Semua Status</option>
+                <option>AKTIF</option>
+                <option>TERLAMBAT</option>
+              </select>
+            </div>
+          </div>
+          <div className="p-6 overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b-2 border-orange-500 text-gray-800 text-[13px] font-bold">
+                  <th className="py-4 px-2">Nama Peminjam</th>
+                  <th className="py-4 px-2">Judul Buku</th>
+                  <th className="py-4 px-2">Jatuh Tempo</th>
+                  <th className="py-4 px-2 text-center">Status</th>
+                  <th className="py-4 px-2 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredData.length > 0 ? (
+                  filteredData.map((item, index) => {
+                    const status = getStatus(item.due_date || item.jatuh_tempo);
+                    return (
+                      <tr key={index} className="bg-white hover:bg-gray-50 transition-colors">
+                        <td className="py-5 px-2">
+                          <p className="font-bold text-gray-800 text-[13px]">{item.name || item.user_name || "Anggota"}</p>
+                          <p className="text-[10px] text-gray-400 font-bold">{item.nim || item.user_id || "N/A"}</p>
+                        </td>
+                        <td className="py-5 px-2 text-[13px] italic text-blue-900 font-medium">
+                          {item.title || item.book_title || item.judul_buku}
+                        </td>
+                        <td className="py-5 px-2 text-[13px] font-black text-red-600">
+                          {item.due_date || item.jatuh_tempo}
+                        </td>
+                        <td className="py-5 px-2 text-center">
+                          <span className={`${status === "TERLAMBAT" ? "bg-red-600" : "bg-green-600"} text-white px-3 py-1.5 rounded-full text-[10px] font-black uppercase flex items-center justify-center gap-1 max-w-[110px] mx-auto`}>
+                            {status === "TERLAMBAT" && <FaExclamationTriangle size={10} />} {status}
+                          </span>
+                        </td>
+                        <td className="py-5 px-2 text-center">
+                          <button onClick={() => { setSelectedIndex(index); setIsModalOpen(true); }} className="bg-green-500 hover:bg-green-700 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mx-auto shadow-sm active:scale-95 transition-all">
+                            <FaUndo className="rotate-[-45deg]" /> Kembalikan
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="px-8 py-10 text-center text-gray-400 font-bold uppercase text-xs tracking-widest">
+                      Tidak ada data peminjaman aktif
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* --- TABLE 2: RIWAYAT PENGEMBALIAN TERBARU --- */}
+        <div className="bg-white rounded-3xl shadow-xl border overflow-hidden">
+          <div className="bg-[#172e5f] p-6 border-b-4 border-orange-500">
+            <h3 className="text-white font-bold flex items-center gap-3 tracking-wider text-base">
+              <FaHistory className="text-white" size={20} /> Riwayat Pengembalian Terbaru
+            </h3>
+          </div>
+          <div className="p-6 overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b-2 border-orange-500 text-gray-800 text-[13px] font-bold">
+                  <th className="py-4 px-2">Tanggal Kembali</th>
+                  <th className="py-4 px-2">NIM</th>
+                  <th className="py-4 px-2">Nama</th>
+                  <th className="py-4 px-2">Judul Buku</th>
+                  <th className="py-4 px-2 text-center">Denda</th>
+                  <th className="py-4 px-2 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {borrowHistory.length > 0 ? (
+                  borrowHistory.map((item, index) => (
+                    <tr key={index} className="bg-white hover:bg-gray-50 transition-colors">
+                      <td className="py-5 px-2 text-[13px] font-medium text-gray-600">
+                        {item.tgl_kembali || item.return_date}
+                      </td>
+                      <td className="py-5 px-2 text-[13px] font-medium text-gray-500">
+                        {item.nim || item.user_id || "N/A"}
+                      </td>
+                      <td className="py-5 px-2 text-[13px] font-bold text-gray-800">
+                        {item.name || item.user_name || "Anggota"}
+                      </td>
+                      <td className="py-5 px-2 text-[13px] italic text-blue-900 font-medium">
+                        {item.title || item.book_title || item.judul_buku}
+                      </td>
+                      <td className="py-5 px-2 text-center text-[13px] font-bold text-gray-700">
+                        {item.denda_display || "-"}
+                      </td>
+                      <td className="py-5 px-2 text-center">
+                        <span className={`${item.is_late_return ? 'bg-[#fbbf24] text-gray-900' : 'bg-[#059669] text-white'} px-4 py-1.5 rounded-full text-[11px] font-bold`}>
+                          {item.history_status || "Tepat Waktu"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="px-8 py-10 text-center text-gray-400 font-bold uppercase text-xs tracking-widest">
+                      Belum ada riwayat pengembalian
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Confirmation Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-[#172e5f]/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="bg-green-600 p-10 text-center text-white">
+              <div className="bg-white/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white/30">
+                <FaUndo size={32} />
+              </div>
+              <h3 className="text-2xl font-black uppercase">Proses Kembali</h3>
+            </div>
+            <div className="p-10 text-center">
+              <p className="text-gray-500 mb-8 font-medium">
+                Kembalikan buku <b>{activeBorrows[selectedIndex!]?.title || activeBorrows[selectedIndex!]?.book_title}</b> oleh <b>{activeBorrows[selectedIndex!]?.name || activeBorrows[selectedIndex!]?.user_name}</b>?
+              </p>
+              <div className="flex gap-4">
+                <button onClick={() => setIsModalOpen(false)} className="flex-1 py-4 text-[10px] font-black uppercase text-gray-400 bg-gray-100 rounded-2xl">Batal</button>
+                <button onClick={handleReturnConfirm} className="flex-1 py-4 text-[10px] font-black uppercase text-white bg-green-600 rounded-2xl shadow-xl">Konfirmasi</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+================================================================================
+File: app\(admin)\statistik\page.tsx
+================================================================================
+export default function Statistik() {
+  return (
+    <div className="grid grid-cols-3 gap-6">
+      <div className="bg-white p-8 rounded-[2.5rem] border border-gray-300 flex flex-col items-center">
+        <h3 className="font-black text-gray-800 mb-8">Kategori Populer</h3>
+        <div className="w-48 h-48 rounded-full border-[20px] border-orange-500 border-l-blue-400 flex items-center justify-center font-black text-2xl text-gray-800">45%</div>
+        <p className="mt-8 text-xs font-bold text-blue-600 tracking-widest uppercase">Teknologi Teratas</p>
+      </div>
+      <div className="col-span-2 bg-white p-8 rounded-[2.5rem] border border-gray-300">
+        <h3 className="font-black text-gray-800 mb-6">Peringkat Buku Mingguan</h3>
+        <div className="space-y-4">
+          {[1,2,3].map(i => (
+            <div key={i} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-300">
+              <span className="font-bold text-gray-700">#0{i} Judul Buku Contoh</span>
+              <span className="text-orange-500 font-black">12x Pinjam</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+================================================================================
+File: app\(admin)\users\page.tsx
+================================================================================
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { 
+  FaUsers, 
+  FaUserPlus, 
+  FaSearch, 
+  FaEdit, 
+  FaTrash, 
+  FaListUl,
+  FaTimes,
+  FaEye,
+  FaSave,
+  FaInfo
+} from "react-icons/fa";
+
+interface User {
+  id: number;
+  nim: string;
+  nama: string;
+  prodi: string;
+  kelas: string;
+  email: string;
+  noHp: string;
+  status: "Aktif" | "Nonaktif";
+}
+
+interface Notification {
+  id: number;
+  nim: string;
+  visible: boolean;
+}
+
+export default function KelolaUserPage() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedProdi, setSelectedProdi] = useState("Semua Prodi");
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+
+  const [formData, setFormData] = useState({
+    nim: "",
+    nama: "",
+    prodi: "PTIK",
+    kelas: "A",
+    email: "",
+    noHp: "",
+    status: "Aktif" as "Aktif" | "Nonaktif"
+  });
+
+  const prodiOptions = ["PTIK", "TEKOM", "PTE", "IK", "DKV"];
+
+  useEffect(() => {
+    const saved = localStorage.getItem("simpes_users");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setUsers(parsed);
+        } else {
+          loadMockData();
+        }
+      } catch (e) {
+        loadMockData();
+      }
+    } else {
+      loadMockData();
+    }
+  }, []);
+
+  const loadMockData = () => {
+    const mockData: User[] = [
+      { id: 1, nim: "2021001", nama: "Ahmad Fajar", prodi: "PTIK", kelas: "A", email: "ahmad@email.com", noHp: "081234567890", status: "Aktif" },
+      { id: 2, nim: "2021002", nama: "Siti Nurhaliza", prodi: "TEKOM", kelas: "B", email: "siti@email.com", noHp: "081234567891", status: "Aktif" },
+    ];
+    setUsers(mockData);
+    localStorage.setItem("simpes_users", JSON.stringify(mockData));
+  };
+
+  const showNimNotification = (nim: string) => {
+    const id = Date.now();
+    setNotifications(prev => [...prev, { id, nim, visible: false }]);
+    setTimeout(() => {
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, visible: true } : n));
+    }, 10);
+    setTimeout(() => {
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, visible: false } : n));
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+      }, 500);
+    }, 3000);
+  };
+
+  const handleDelete = (id: number) => {
+    if (confirm("Apakah Anda yakin ingin menghapus anggota ini?")) {
+      const updated = users.filter((u) => u.id !== id);
+      setUsers(updated);
+      localStorage.setItem("simpes_users", JSON.stringify(updated));
+    }
+  };
+
+  const handleSaveUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    const userPayload: User = { id: editingUser ? editingUser.id : Date.now(), ...formData };
+    const updatedUsers = editingUser 
+      ? users.map((u) => u.id === editingUser.id ? userPayload : u)
+      : [...users, userPayload];
+    setUsers(updatedUsers);
+    localStorage.setItem("simpes_users", JSON.stringify(updatedUsers));
+    closeModal();
+  };
+
+  const openAddModal = () => {
+    setEditingUser(null);
+    setFormData({ nim: "", nama: "", prodi: "PTIK", kelas: "A", email: "", noHp: "", status: "Aktif" });
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (user: User) => {
+    setEditingUser(user);
+    setFormData({ ...user });
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingUser(null);
+  };
+
+  const filteredUsers = users.filter((user) => {
+    const query = searchQuery.toLowerCase();
+    const matchesSearch = user.nama.toLowerCase().includes(query) || user.nim.toLowerCase().includes(query);
+    const matchesProdi = selectedProdi === "Semua Prodi" || user.prodi === selectedProdi;
+    return matchesSearch && matchesProdi;
+  });
+
+  return (
+    <div className="relative space-y-6 p-2">
+      
+      {/* --- STACKING NOTIFICATION --- */}
+      <div className="fixed top-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none items-end">
+        {notifications.map((notif) => (
+          <div key={notif.id} className={`flex items-center gap-3 bg-white shadow-xl rounded-md py-3 px-5 border-l-[5px] border-[#12a0b8] transition-all duration-500 ease-out pointer-events-auto w-fit ${notif.visible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}>
+            <div className="bg-[#12a0b8] w-6 h-6 rounded-sm flex items-center justify-center text-white shrink-0"><FaInfo size={10} /></div>
+            <span className="text-[#1e293b] font-medium text-[14px] whitespace-nowrap">Melihat detail user: <span className="font-bold">{notif.nim}</span></span>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <FaUsers className="text-[#172e5f] text-3xl" />
+          <h1 className="text-2xl font-semibold text-[#172e5f]">Kelola User</h1>
+        </div>
+        <button onClick={openAddModal} className="bg-[#f97316] hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 shadow-md transition-all">
+          <FaUserPlus size={16} /> Tambah User
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-[#172e5f] text-white p-4 flex items-center gap-3">
+          <FaListUl className="text-lg" />
+          <h3 className="text-md font-semibold">Daftar Anggota</h3>
+        </div>
+
+        <div className="p-5 border-b border-gray-100 flex flex-col md:flex-row gap-4 bg-white">
+          <div className="relative flex-1">
+            <input type="text" placeholder="Cari anggota..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-white border border-gray-200 rounded-xl py-2.5 pl-5 pr-12 outline-none text-gray-700 focus:border-orange-500 transition-colors" />
+            <FaSearch className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300" />
+          </div>
+          <select value={selectedProdi} onChange={(e) => setSelectedProdi(e.target.value)} className="bg-white border border-gray-200 rounded-xl py-2.5 px-5 outline-none font-medium text-gray-600 min-w-[180px] focus:border-orange-500">
+            <option>Semua Prodi</option>
+            {prodiOptions.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-[#f97316]">
+                <th className="px-6 py-4 text-xs font-bold text-[#172e5f] uppercase tracking-wider">NIM</th>
+                <th className="px-6 py-4 text-xs font-bold text-[#172e5f] uppercase tracking-wider">Nama</th>
+                <th className="px-6 py-4 text-xs font-bold text-[#172e5f] uppercase tracking-wider">Prodi</th>
+                <th className="px-6 py-4 text-xs font-bold text-[#172e5f] uppercase tracking-wider text-center">Kelas</th>
+                <th className="px-6 py-4 text-xs font-bold text-[#172e5f] uppercase tracking-wider">Email</th>
+                <th className="px-6 py-4 text-xs font-bold text-[#172e5f] uppercase tracking-wider">No. HP</th>
+                <th className="px-6 py-4 text-xs font-bold text-[#172e5f] uppercase tracking-wider text-center">Status</th>
+                <th className="px-6 py-4 text-xs font-bold text-[#172e5f] uppercase tracking-wider text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredUsers.map((user) => (
+                <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 text-[13px] text-gray-600">{user.nim}</td>
+                  <td className="px-6 py-4 text-[13px] font-medium text-gray-800">{user.nama}</td>
+                  <td className="px-6 py-4 text-[13px] text-gray-600">{user.prodi}</td>
+                  <td className="px-6 py-4 text-[13px] text-gray-600 text-center">{user.kelas}</td>
+                  <td className="px-6 py-4 text-[13px] text-gray-600">{user.email}</td>
+                  <td className="px-6 py-4 text-[13px] text-gray-600">{user.noHp}</td>
+                  <td className="px-6 py-4 text-center">
+                    <span className={`px-3 py-1 rounded-full text-[11px] font-bold ${user.status === 'Aktif' ? 'bg-[#10b981] text-white' : 'bg-gray-400 text-white'}`}>
+                      {user.status.toUpperCase()}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <div className="flex justify-center gap-2">
+                      <button onClick={() => showNimNotification(user.nim)} className="p-2 bg-[#06b6d4] text-white rounded-lg hover:bg-cyan-600 transition-colors"><FaEye size={14} /></button>
+                      <button onClick={() => openEditModal(user)} className="p-2 bg-[#fbbf24] text-white rounded-lg hover:bg-amber-500 transition-colors"><FaEdit size={14} /></button>
+                      <button onClick={() => handleDelete(user.id)} className="p-2 bg-[#f43f5e] text-white rounded-lg hover:bg-rose-600 transition-colors"><FaTrash size={14} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* MODAL (Add/Edit) */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl">
+            <div className="bg-[#172e5f] p-5 text-white flex justify-between items-center">
+              <h2 className="text-lg font-semibold uppercase">{editingUser ? "Edit Data Anggota" : "Tambah Anggota Baru"}</h2>
+              <button onClick={closeModal}><FaTimes size={18} /></button>
+            </div>
+            <form onSubmit={handleSaveUser} className="p-6 space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-400 uppercase">NIM / ID User</label>
+                  <input required value={formData.nim} onChange={(e) => setFormData({...formData, nim: e.target.value})} className="w-full border-b border-gray-200 py-1.5 outline-none focus:border-orange-500 font-medium" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-400 uppercase">Nama Lengkap</label>
+                  <input required value={formData.nama} onChange={(e) => setFormData({...formData, nama: e.target.value})} className="w-full border-b border-gray-200 py-1.5 outline-none focus:border-orange-500 font-medium" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-400 uppercase">Program Studi</label>
+                  <select value={formData.prodi} onChange={(e) => setFormData({...formData, prodi: e.target.value})} className="w-full border-b border-gray-200 py-1.5 outline-none focus:border-orange-500 font-medium bg-white">
+                    {prodiOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-400 uppercase">Kelas</label>
+                  <input required value={formData.kelas} onChange={(e) => setFormData({...formData, kelas: e.target.value})} className="w-full border-b border-gray-200 py-1.5 outline-none focus:border-orange-500 font-medium" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-400 uppercase">Email</label>
+                  <input type="email" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full border-b border-gray-200 py-1.5 outline-none focus:border-orange-500 font-medium" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-400 uppercase">No. HP</label>
+                  <input required value={formData.noHp} onChange={(e) => setFormData({...formData, noHp: e.target.value})} className="w-full border-b border-gray-200 py-1.5 outline-none focus:border-orange-500 font-medium" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-400 uppercase">Status Keanggotaan</label>
+                <select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value as any})} className="w-full border-b border-gray-100 py-1.5 outline-none focus:border-orange-500 font-medium bg-white">
+                  <option value="Aktif">Aktif</option>
+                  <option value="Nonaktif">Nonaktif</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <button type="button" onClick={closeModal} className="px-6 py-2 bg-gray-100 text-gray-500 rounded-xl font-semibold uppercase tracking-wider text-xs">Batal</button>
+                <button type="submit" className="px-6 py-2 bg-[#f97316] text-white rounded-xl font-semibold uppercase tracking-wider text-xs flex items-center gap-2 shadow-md">
+                  <FaSave /> Simpan User
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+================================================================================
+File: app\admin-login\page.tsx
+================================================================================
+"use client";
+
+import { User, Lock, Info, LogIn, Mail, Instagram } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+
+export default function AdminLoginPage() {
+  const router = useRouter();
+  const [loginRole, setLoginRole] = useState("Admin/Petugas");
+
+  // Logic to redirect back to the User Login page
+  useEffect(() => {
+    if (loginRole === "Anggota/Mahasiswa") {
+      // Redirects to the root app folder where User Login lives
+      router.push("/"); 
+    }
+  }, [loginRole, router]);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Redirects to the Admin Dashboard
+    router.push('/dashboard'); 
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#172e5f] to-[#7c2d12] flex items-center justify-center p-4 font-sans">
+      
+      <div className="flex flex-col md:flex-row gap-8 items-center max-w-5xl w-full">
+        
+        {/* --- Login Card --- */}
+        <div className="bg-[#172e5f]/60 backdrop-blur-md p-10 rounded-2xl w-full max-w-md shadow-2xl border border-white/5">
+          <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <div className="relative w-16 h-16">
+                 {/* Logo SVG */}
+                 <svg viewBox="0 0 24 24" className="fill-white" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 3L1 9L12 15L21 10.09V17H23V9M5 13.18V17.18L12 21L19 17.18V13.18L12 17L5 13.18Z" />
+                 </svg>
+                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full border-2 border-[#172e5f]"></div>
+              </div>
+            </div>
+            <h1 className="text-white text-3xl font-bold tracking-wider uppercase">SIMPES</h1>
+            <p className="text-gray-300 text-[10px] mt-1">Jurusan Teknik Informatika dan Komputer</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-1.5">
+              <label className="text-white text-xs font-medium flex items-center gap-2">
+                <User size={14} /> Username
+              </label>
+              <input 
+                required 
+                type="text" 
+                placeholder="Masukkan Username" 
+                className="w-full bg-[#334155]/80 border border-white/10 rounded-lg py-3 px-4 text-sm text-white placeholder:text-gray-400 focus:ring-2 focus:ring-orange-500 outline-none transition-all" 
+              />
+            </div>
+            
+            <div className="space-y-1.5">
+              <label className="text-white text-xs font-medium flex items-center gap-2">
+                <Lock size={14} /> Password
+              </label>
+              <input 
+                required 
+                type="password" 
+                placeholder="Masukkan Password" 
+                className="w-full bg-[#334155]/80 border border-white/10 rounded-lg py-3 px-4 text-sm text-white placeholder:text-gray-400 focus:ring-2 focus:ring-orange-500 outline-none transition-all" 
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-white text-xs font-medium flex items-center gap-2">
+                <User size={14} /> Login Sebagai
+              </label>
+              <select 
+                value={loginRole}
+                onChange={(e) => setLoginRole(e.target.value)}
+                className="w-full bg-[#334155]/80 border border-white/10 rounded-lg py-3 px-4 text-sm text-white outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer"
+              >
+                <option value="Admin/Petugas" className="bg-[#172e5f]">Admin/Petugas</option>
+                <option value="Anggota/Mahasiswa" className="bg-[#172e5f]">Anggota/Mahasiswa</option>
+              </select>
+            </div>
+
+            <button 
+              type="submit" 
+              className="w-full bg-[#ff4d2d] hover:bg-[#e63e1f] text-white py-3.5 rounded-lg font-bold text-sm shadow-lg transition-colors flex items-center justify-center gap-2"
+            >
+              <LogIn size={18} /> Login
+            </button>
+          </form>
+
+          <p className="text-center text-white text-xs mt-8">
+            Butuh bantuan? <span className="text-orange-400 cursor-pointer font-semibold hover:underline">Hubungi IT Support</span>
+          </p>
+        </div>
+
+        {/* --- Info Card (Right Side) --- */}
+        <div className="bg-[#ffffff]/10 backdrop-blur-md border border-white/10 p-10 rounded-2xl w-full max-w-sm text-white hidden md:block">
+          <div className="text-center mb-6">
+            <div className="bg-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-4">
+              <Info size={24} className="text-[#172e5f]" />
+            </div>
+            <h2 className="text-xl font-bold">Informasi Perpustakaan</h2>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-center gap-3 text-sm">
+              <Mail size={16} className="text-orange-500" />
+              <span className="text-gray-200">perpustakaanjtikunm@gmail.com</span>
+            </div>
+            <div className="flex items-center justify-center gap-3 text-sm">
+              <Instagram size={16} className="text-orange-500" />
+              <span className="text-gray-200">@pustaka_jtik</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+
+================================================================================
+File: app\components\navbar.tsx
+================================================================================
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import axios from 'axios';
+import { FaUser, FaSignOutAlt, FaGraduationCap } from 'react-icons/fa';
+
+export default function Navbar() {
+  const [name, setName] = useState('...');
+
+  useEffect(() => {
+    // Get the name from localStorage instantly; if missing, try fetching profile
+    const storedName = localStorage.getItem('user_name');
+    if (storedName) {
+      setName(storedName);
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    // If localStorage doesn't have the name but we have a token, fetch profile
+    (async () => {
+      try {
+        const resp = await axios.get('http://127.0.0.1:8000/api/user-profile', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const fetchedName = resp.data?.name || resp.data?.user?.name;
+        if (fetchedName) {
+          setName(fetchedName);
+          localStorage.setItem('user_name', fetchedName);
+        }
+      } catch (e) {
+        // silent fail — keep placeholder
+      }
+    })();
+  }, []);
+
+  const handleLogout = async () => {
+    const token = localStorage.getItem('token');
+    
+    // 1. Immediately Clear Local Storage
+    // We do this BEFORE the API call so the user is "logged out" locally instantly
+    localStorage.removeItem('token');
+    localStorage.removeItem('user_name');
+
+    try {
+      if (token) {
+        // 2. Tell Laravel to kill the session (Background task)
+        await axios.post('http://127.0.0.1:8000/api/logout', {}, {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Server-side logout failed, but local session cleared.");
+    } finally {
+      // 3. THE HISTORY KILLER
+      // window.location.href forces a full page reload and prevents 
+      // the "Back" button from showing the cached Dashboard state.
+      window.location.href = '/'; 
+    }
+  };
+
+  return (
+    <nav className="bg-[#172e5f] text-white h-16 flex items-center justify-between px-6 shadow-md fixed w-full z-20">
+      <div className="flex items-center gap-3">
+        <FaGraduationCap className="text-3xl text-orange-500" />
+        <h1 className="text-xl font-bold tracking-wide">SIMPES JTIK</h1>
+      </div>
+
+      <div className="flex items-center gap-6">
+        <Link
+          href="/user/dashboard/profile"
+          className="flex items-center gap-2 hover:text-orange-400 cursor-pointer"
+        >
+          <div className="bg-white/10 p-1.5 rounded-full">
+            <FaUser className="text-sm" />
+          </div>
+          <span className="font-medium text-sm">{name}</span>
+        </Link>
+
+        <button 
+          onClick={handleLogout}
+          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-1.5 rounded-md text-sm font-bold flex items-center gap-2 shadow-lg shadow-orange-900/20"
+        >
+          <FaSignOutAlt /> Logout
+        </button>
+      </div>
+    </nav>
+  );
+}
+
+
+================================================================================
+File: app\components\sidebar.tsx
+================================================================================
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { FaHome, FaSearch, FaInfoCircle, FaUser } from 'react-icons/fa';
+
+export default function Sidebar() {
+  const pathname = usePathname();
+
+  // Helper function to style active links
+  const getLinkStyle = (path: string) => {
+    const isActive = pathname === path;
+    return isActive
+      ? "flex items-center gap-3 px-6 py-3 bg-[#172e5f] text-white border-l-4 border-orange-500 transition-all relative"
+      : "flex items-center gap-3 px-6 py-3 text-gray-700 hover:text-[#172e5f] hover:font-bold hover:translate-x-1 transition-all transition-delay duration-200 relative group";
+  };
+
+  return (
+    <aside className="w-64 bg-white shadow-lg fixed h-full hidden md:block z-10">
+      <style>{`
+        .group:hover::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(to right, rgba(200, 200, 200, 0.2), rgba(200, 200, 200, 0));
+          border-radius: inherit;
+          pointer-events: none;
+          animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        .group:hover::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          width: 4px;
+          height: 32px;
+          background-color: #f97316;
+          border-radius: 0 4px 4px 0;
+          animation: slideIn 0.3s ease-out 0.15s forwards;
+          opacity: 0;
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            width: 0;
+          }
+          to {
+            opacity: 1;
+            width: 4px;
+          }
+        }
+      `}</style>
+      <div className="py-6">
+        <ul className="space-y-1">
+          <li>
+            <Link href="/user/dashboard/profile" className={getLinkStyle('/user/dashboard/profile')}>
+              <FaUser />
+              <span className="font-medium">Profil Saya</span>
+            </Link>
+          </li>
+
+          <li>
+            <Link href="/user/dashboard" className={getLinkStyle('/user/dashboard')}>
+              <FaHome />
+              <span className="font-medium">Dashboard</span>
+            </Link>
+          </li>
+          
+          <li>
+            <Link href="/user/dashboard/cari-buku" className={getLinkStyle('/user/dashboard/cari-buku')}>
+              <FaSearch />
+              <span className="font-medium">Cari Buku</span>
+            </Link>
+          </li>
+
+          <li>
+            <Link href="/user/dashboard/informasi" className={getLinkStyle('/user/dashboard/informasi')}>
+              <FaInfoCircle />
+              <span className="font-medium">Informasi</span>
+            </Link>
+          </li>
+        </ul>
+      </div>
+    </aside>
+  );
+}
+
+
+================================================================================
+File: app\globals.css
+================================================================================
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInFromRight 0.5s ease-out forwards;
+}
+
+
+================================================================================
+File: app\layout.tsx
+================================================================================
+"use client";
+
+import React from "react";
+import "@/app/globals.css";
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body className="antialiased bg-[#f8fafc] text-slate-900 m-0 p-0">
+        {/* Removed all margin-left and fixed widths to ensure full screen usage */}
+        <div className="min-h-screen w-full">
+          <main className="w-full">
+            {children}
+          </main>
+        </div>
+      </body>
+    </html>
+  );
+}
+
+
+================================================================================
+File: app\page.tsx
+================================================================================
+'use client';
+
+import { User, Lock, Info, LogIn, Mail, Instagram } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import axios from 'axios'; // 1. Import Axios
+
+export default function UserLoginPage() {
+  const router = useRouter();
+  const [loginRole, setLoginRole] = useState("Anggota/Mahasiswa");
+  
+  // 2. Add state for input fields and loading status
+  const [nim, setNim] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (loginRole === "Admin/Petugas") {
+      router.push("/admin-login");
+    }
+  }, [loginRole, router]);
+
+  // 3. Updated Login Logic
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      // Send request to your Laravel API
+      const response = await axios.post('http://127.0.0.1:8000/api/login', {
+        nim: nim,
+        password: password
+      }, {
+        headers: { 'Accept': 'application/json' }
+      });
+
+      // If successful, Laravel returns the token
+      const token = response.data.access_token;
+      
+      // Save token so you can access protected routes later
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+
+      alert('Login Berhasil!');
+      router.push('/user/dashboard'); 
+      
+    } catch (error: any) {
+      // If credentials are wrong, Laravel returns 401
+      alert('Login Gagal: NIM atau Password salah!');
+      console.error("Login error:", error.response?.data);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#172e5f] to-[#7c2d12] flex items-center justify-center p-4 font-sans">
+      <div className="flex flex-col md:flex-row gap-8 items-center max-w-5xl w-full">
+        
+        <div className="bg-[#172e5f]/60 backdrop-blur-md p-10 rounded-2xl w-full max-w-md shadow-2xl border border-white/5">
+          <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <div className="relative w-16 h-16">
+                 <svg viewBox="0 0 24 24" className="fill-white" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 3L1 9L12 15L21 10.09V17H23V9M5 13.18V17.18L12 21L19 17.18V13.18L12 17L5 13.18Z" />
+                 </svg>
+                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full border-2 border-[#172e5f]"></div>
+              </div>
+            </div>
+            <h1 className="text-white text-3xl font-bold tracking-wider uppercase">SIMPES</h1>
+            <p className="text-gray-300 text-[10px] mt-1">Jurusan Teknik Informatika dan Komputer</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-1.5">
+              <label className="text-white text-xs font-medium flex items-center gap-2">
+                <User size={14} /> NIM
+              </label>
+              <input 
+                required 
+                type="text" 
+                value={nim} // Bind state
+                onChange={(e) => setNim(e.target.value)} // Update state
+                placeholder="Masukkan NIM" 
+                className="w-full bg-[#334155]/80 border border-white/10 rounded-lg py-3 px-4 text-sm text-white placeholder:text-gray-400 focus:ring-2 focus:ring-orange-500 outline-none transition-all" 
+              />
+            </div>
+            
+            <div className="space-y-1.5">
+              <label className="text-white text-xs font-medium flex items-center gap-2">
+                <Lock size={14} /> Password
+              </label>
+              <input 
+                required 
+                type="password" 
+                value={password} // Bind state
+                onChange={(e) => setPassword(e.target.value)} // Update state
+                placeholder="Masukkan Password" 
+                className="w-full bg-[#334155]/80 border border-white/10 rounded-lg py-3 px-4 text-sm text-white placeholder:text-gray-400 focus:ring-2 focus:ring-orange-500 outline-none transition-all" 
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-white text-xs font-medium flex items-center gap-2">
+                <User size={14} /> Login Sebagai
+              </label>
+              <select 
+                value={loginRole}
+                onChange={(e) => setLoginRole(e.target.value)}
+                className="w-full bg-[#334155]/80 border border-white/10 rounded-lg py-3 px-4 text-sm text-white outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer"
+              >
+                <option value="Anggota/Mahasiswa" className="bg-[#172e5f]">Anggota/Mahasiswa</option>
+                <option value="Admin/Petugas" className="bg-[#172e5f]">Admin/Petugas</option>
+              </select>
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={isLoading} // Disable while loading
+              className="w-full bg-[#ff4d2d] hover:bg-[#e63e1f] disabled:bg-gray-500 text-white py-3.5 rounded-lg font-bold text-sm shadow-lg transition-colors flex items-center justify-center gap-2"
+            >
+              {isLoading ? "Authenticating..." : <><LogIn size={18} /> Login</>}
+            </button>
+          </form>
+
+          <p className="text-center text-white text-xs mt-8">
+            Belum punya akun? <span className="text-orange-400 cursor-pointer font-semibold hover:underline" onClick={() => router.push('/register')}>Daftar Sekarang</span>
+          </p>
+        </div>
+
+        {/* --- Info Card (Right Side) --- */}
+        <div className="bg-[#ffffff]/10 backdrop-blur-md border border-white/10 p-10 rounded-2xl w-full max-w-sm text-white hidden md:block">
+          <div className="text-center mb-6">
+            <div className="bg-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-4">
+              <Info size={24} className="text-[#172e5f]" />
+            </div>
+            <h2 className="text-xl font-bold">Informasi Perpustakaan</h2>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-center gap-3 text-sm">
+              <Mail size={16} className="text-orange-500" />
+              <span className="text-gray-200">perpustakaanjtikunm@gmail.com</span>
+            </div>
+            <div className="flex items-center justify-center gap-3 text-sm">
+              <Instagram size={16} className="text-orange-500" />
+              <span className="text-gray-200">@pustaka_jtik</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+
+================================================================================
+File: app\register\page.tsx
+================================================================================
+'use client';
+
+import React, { useState } from 'react'; // Added useState
+import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // Added for redirecting
+import axios from 'axios'; // Import axios
+import { 
+  FaUser, FaLock, FaEnvelope, FaGraduationCap, 
+  FaUsers, FaPhone, FaIdCard, FaUserCheck 
+} from 'react-icons/fa';
+
+export default function RegisterPage() {
+  const router = useRouter();
+  
+  // 1. Setup State to hold form data
+  const [formData, setFormData] = useState({
+    name: '',
+    nim: '',
+    prodi: '',
+    kelas: '',
+    email: '',
+    no_hp: '',
+    password: '',
+    password_confirmation: '', // Laravel needs this exact name
+  });
+
+  // 2. Handle Input Changes
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // 3. Submit to Laravel API
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      // Make sure your Laravel server is running at this URL!
+      const response = await axios.post('http://127.0.0.1:8000/api/register', formData);
+      
+      alert('Registrasi Berhasil!');
+      router.push('/'); // Redirect to login page after success
+    } catch (error: any) {
+      // Shows error if NIM/Email is already taken or validation fails
+      alert('Error: ' + JSON.stringify(error.response?.data?.errors || "Server Error"));
+    }
+  };
+
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#0f172a] via-[#172e5f] to-[#ea580c] p-4 font-sans">
+      <div className="bg-[#172e5f]/90 backdrop-blur-sm p-8 rounded-3xl shadow-2xl w-full max-w-4xl border border-white/5 text-white">
+        
+        <div className="flex flex-col items-center mb-8">
+          <div className="text-5xl text-white mb-2">
+            <FaGraduationCap />
+          </div>
+          <h1 className="text-3xl font-bold tracking-wider">SIMPES</h1>
+          <p className="text-sm text-gray-400 mt-1">Jurusan Teknik Informatika dan Komputer</p>
+        </div>
+
+        {/* 4. Add onSubmit handler */}
+        <form className="space-y-5" onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Left Column */}
+            <div className="space-y-5">
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium mb-2 text-gray-200">
+                  <FaUser className="text-xs" /> Nama Lengkap
+                </label>
+                <input 
+                  name="name" // Match Laravel field
+                  onChange={handleChange}
+                  type="text" 
+                  placeholder="Nama Lengkap" 
+                  className="w-full bg-[#334155] border border-transparent focus:border-orange-500 focus:ring-0 text-white placeholder-gray-400 rounded-lg px-4 py-3 outline-none transition-all"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium mb-2 text-gray-200">
+                  <FaGraduationCap className="text-xs" /> Program Studi
+                </label>
+                <input 
+                  name="prodi"
+                  onChange={handleChange}
+                  type="text" 
+                  placeholder="Pilih Prodi" 
+                  className="w-full bg-[#334155] border border-transparent focus:border-orange-500 focus:ring-0 text-white placeholder-gray-400 rounded-lg px-4 py-3 outline-none transition-all"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium mb-2 text-gray-200">
+                  <FaEnvelope className="text-xs" /> Email
+                </label>
+                <input 
+                  name="email"
+                  onChange={handleChange}
+                  type="email" 
+                  placeholder="email@example.com" 
+                  className="w-full bg-[#334155] border border-transparent focus:border-orange-500 focus:ring-0 text-white placeholder-gray-400 rounded-lg px-4 py-3 outline-none transition-all"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium mb-2 text-gray-200">
+                  <FaLock className="text-xs" /> Password
+                </label>
+                <input 
+                  name="password"
+                  onChange={handleChange}
+                  type="password" 
+                  placeholder="Minimal 6 karakter" 
+                  className="w-full bg-[#334155] border border-transparent focus:border-orange-500 focus:ring-0 text-white placeholder-gray-400 rounded-lg px-4 py-3 outline-none transition-all"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-5">
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium mb-2 text-gray-200">
+                  <FaIdCard className="text-xs" /> NIM
+                </label>
+                <input 
+                  name="nim"
+                  onChange={handleChange}
+                  type="text" 
+                  placeholder="NIM" 
+                  className="w-full bg-[#334155] border border-transparent focus:border-orange-500 focus:ring-0 text-white placeholder-gray-400 rounded-lg px-4 py-3 outline-none transition-all"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium mb-2 text-gray-200">
+                  <FaUsers className="text-xs" /> Kelas
+                </label>
+                <input 
+                  name="kelas"
+                  onChange={handleChange}
+                  type="text" 
+                  placeholder="Contoh: A" 
+                  className="w-full bg-[#334155] border border-transparent focus:border-orange-500 focus:ring-0 text-white placeholder-gray-400 rounded-lg px-4 py-3 outline-none transition-all"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium mb-2 text-gray-200">
+                  <FaPhone className="text-xs" /> Nomor HP
+                </label>
+                <input 
+                  name="no_hp"
+                  onChange={handleChange}
+                  type="tel" 
+                  placeholder="08xxxxxxxxxx" 
+                  className="w-full bg-[#334155] border border-transparent focus:border-orange-500 focus:ring-0 text-white placeholder-gray-400 rounded-lg px-4 py-3 outline-none transition-all"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium mb-2 text-gray-200">
+                  <FaLock className="text-xs" /> Konfirmasi Password
+                </label>
+                <input 
+                  name="password_confirmation"
+                  onChange={handleChange}
+                  type="password" 
+                  placeholder="Ulangi Password" 
+                  className="w-full bg-[#334155] border border-transparent focus:border-orange-500 focus:ring-0 text-white placeholder-gray-400 rounded-lg px-4 py-3 outline-none transition-all"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold py-3 rounded-lg mt-8 flex items-center justify-center gap-2 transition-all shadow-lg transform active:scale-95"
+          >
+            <FaUserCheck /> Daftar Sekarang
+          </button>
+        </form>
+
+        <div className="mt-6 text-center text-sm text-gray-400">
+          Sudah punya akun? <Link href="/" className="text-orange-400 hover:text-orange-300 font-medium">Login Sekarang</Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+================================================================================
+File: app\user\dashboard\cari-buku\page.tsx
+================================================================================
+'use client';
+
+import React, { useState, useEffect, useMemo } from 'react';
+import Fuse from 'fuse.js';
+import Navbar from '../../../components/navbar';
+import Sidebar from '../../../components/sidebar';
+import { 
+  FaSearch, 
+  FaBook, 
+  FaUser, 
+  FaTag, 
+  FaBookmark, 
+  FaHandHolding,
+  FaBan
+} from 'react-icons/fa';
+
+export default function CariBukuPage() {
+  // --- SYNC WITH ADMIN DATA ---
+  const [books, setBooks] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("Semua Kategori");
+  const [selectedBook, setSelectedBook] = useState<any | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [borrowDate, setBorrowDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [notification, setNotification] = useState<{ show: boolean; bookCode: string; borrowDate: string }>({ show: false, bookCode: '', borrowDate: '' });
+  const [notificationFading, setNotificationFading] = useState(false);
+
+  useEffect(() => {
+    const savedBooks = localStorage.getItem("simpes_inventory");
+    if (savedBooks) {
+      setBooks(JSON.parse(savedBooks));
+    }
+  }, []);
+
+  const formatDisplayDate = (iso: string) => {
+    try {
+      const d = new Date(iso);
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      return `${dd} / ${mm} / ${yyyy}`;
+    } catch {
+      return iso;
+    }
+  }
+
+  const openBorrowModal = (book: any) => {
+    setSelectedBook(book);
+    setBorrowDate(new Date().toISOString().slice(0, 10));
+    setIsModalOpen(true);
+  };
+
+  const handleConfirmBorrow = () => {
+    if (!selectedBook) return;
+
+    // --- LOGIC FIX: Subtract from 'available', NOT 'stock' ---
+    const updated = books.map(b => {
+      if (b.id === selectedBook.id) {
+        // We decrease the available count, leaving the stock (total) untouched
+        return { 
+          ...b, 
+          available: Math.max(0, (b.available || 0) - 1) 
+        };
+      }
+      return b;
+    });
+
+    setBooks(updated);
+    localStorage.setItem('simpes_inventory', JSON.stringify(updated));
+    
+    const borrowedBooksData = JSON.parse(localStorage.getItem('borrowed_books') || '{"active": [], "history": []}');
+    const newBorrow = {
+      title: selectedBook.title,
+      borrow_date: borrowDate,
+      due_date: new Date(new Date(borrowDate).getTime() + 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+    };
+    borrowedBooksData.active.push(newBorrow);
+    localStorage.setItem('borrowed_books', JSON.stringify(borrowedBooksData));
+    
+    setNotification({
+      show: true,
+      bookCode: selectedBook.id,
+      borrowDate: borrowDate
+    });
+    setNotificationFading(false);
+    
+    setTimeout(() => {
+      setNotificationFading(true);
+    }, 4500);
+    
+    setTimeout(() => {
+      setNotification({ ...notification, show: false });
+      setNotificationFading(false);
+    }, 5000);
+    
+    setIsModalOpen(false);
+    setSelectedBook(null);
+  };
+
+  // --- FUZZY SEARCH LOGIC ---
+  const filteredBooks = useMemo(() => {
+    let listToSearch = books;
+
+    if (selectedCategory !== "Semua Kategori") {
+      listToSearch = books.filter(book => book.category === selectedCategory);
+    }
+
+    if (!searchQuery.trim()) return listToSearch;
+
+    const fuse = new Fuse(listToSearch, {
+      keys: ["title", "author", "id"],
+      threshold: 0.4,
+      distance: 100,
+    });
+
+    return fuse.search(searchQuery).map(result => result.item);
+  }, [searchQuery, selectedCategory, books]);
+
+  // --- Unique and Clean Category List ---
+  const categories = useMemo(() => {
+    const rawCategories = books.map(b => b.category).filter(Boolean);
+    return ["Semua Kategori", ...Array.from(new Set(rawCategories))];
+  }, [books]);
+
+  return (
+    <div className="h-screen bg-white flex flex-col font-sans overflow-hidden">
+      <style>{`
+        @keyframes slideInFromRight {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes fadeOut {
+          from { opacity: 1; }
+          to { opacity: 0; }
+        }
+      `}</style>
+      <Navbar />
+
+      {notification.show && (
+        <div className="fixed top-4 right-4 z-50" style={{
+          animation: notificationFading ? 'fadeOut 0.5s ease-out forwards' : 'slideInFromRight 0.5s ease-out forwards'
+        }}>
+          <div className="bg-white rounded-lg shadow-lg border-l-4 border-[#17a2b8] py-2 px-4">
+            <div className="flex items-center gap-4">
+              <div className="bg-[#17a2b8]/10 rounded-full p-2 flex-shrink-0">
+                <div className="text-[#17a2b8] text-lg font-bold flex items-center justify-center w-5 h-5">i</div>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-800">
+                  Peminjaman berhasil! Kode Buku: <span className="font-bold">{notification.bookCode}</span> Tanggal Pinjam: <span className="font-bold">{new Date(notification.borrowDate).toLocaleDateString('id-ID', { year: 'numeric', month: '2-digit', day: '2-digit' })}</span> Silakan tunjukkan QR code Anda ke petugas perpustakaan.
+                </p>
+              </div>
+              <button 
+                onClick={() => setNotification({ ...notification, show: false })}
+                className="text-gray-400 hover:text-gray-600 text-lg flex-shrink-0"
+              >✕</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex pt-16 h-full">
+        <Sidebar />
+
+        <main className="flex-1 md:ml-64 p-8 bg-white overflow-y-auto">
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-3">
+              <div className="bg-orange-500 p-2 rounded text-white">
+                <FaBook />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800">Daftar Buku</h2>
+            </div>
+            <p className="text-sm text-gray-600">Total {filteredBooks.length} buku ditemukan</p>
+          </div>
+
+          <div className="flex flex-col md:flex-row gap-4 mb-8 bg-gray-100 p-4 rounded-xl border border-gray-300">
+            <div className="flex-1 relative">
+              <input 
+                type="text" 
+                placeholder="Cari judul buku, penulis, atau kode..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-4 pr-12 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none text-gray-800 font-medium placeholder:text-gray-500"
+              />
+              <div className="absolute right-4 top-3 text-gray-500">
+                <FaSearch />
+              </div>
+            </div>
+            
+            <select 
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="bg-white border border-gray-300 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-orange-500 min-w-[200px] font-medium text-gray-800"
+            >
+              {categories.map((cat, index) => (
+                <option key={`${cat}-${index}`} value={cat as string}>
+                  {cat as string}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredBooks.length > 0 ? (
+              filteredBooks.map((book) => (
+                <div key={book.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm transform transition duration-200 hover:-translate-y-1 hover:shadow-lg overflow-hidden flex flex-col">
+                  <div className="bg-[#c1d095] h-48 flex items-center justify-center m-4 rounded-xl">
+                    <FaBook className="text-6xl text-[#172e5f]" />
+                  </div>
+                  <div className="px-6 pb-6 flex-1 flex flex-col">
+                    <h3 className="font-bold text-gray-800 text-lg mb-3 line-clamp-2">{book.title}</h3>
+                    <div className="space-y-2 mb-4 text-sm text-gray-600">
+                      <div className="flex items-center gap-2"><FaUser className="text-xs text-gray-500" /> {book.author}</div>
+                      <div className="flex items-center gap-2"><FaTag className="text-xs text-gray-500" /> {book.category || 'Umum'}</div>
+                      <div className="flex items-center gap-2"><FaBookmark className="text-xs text-gray-500" /> Kode: {book.id}</div>
+                    </div>
+                    <div className="mb-4">
+                      {/* --- Color reverted to Green (bg-green-600) and using 'available' property --- */}
+                      <span className={`${book.available > 0 ? 'bg-green-600' : 'bg-red-600'} text-white text-xs px-3 py-1 rounded-full font-bold`}>
+                        {book.available > 0 ? `Tersedia: ${book.available}` : 'Stok Habis'}
+                      </span>
+                    </div>
+
+                    {/* --- Borrow button logic updated to check 'available' --- */}
+                    {book.available > 0 ? (
+                      <button onClick={() => openBorrowModal(book)} className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold transition-colors mt-auto">
+                        <FaHandHolding /> Pinjam Buku
+                      </button>
+                    ) : (
+                      <button disabled className="w-full bg-gray-600 text-white py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold cursor-not-allowed mt-auto">
+                        <FaBan /> Tidak Tersedia
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full py-20 text-center text-gray-400 font-bold">
+                Tidak ada buku yang sesuai dengan pencarian Anda.
+              </div>
+            )}
+          </div>
+
+          {/* --- BORROW MODAL --- */}
+          {isModalOpen && selectedBook && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/40" onClick={() => setIsModalOpen(false)} />
+              <div className="bg-white rounded-lg shadow-lg w-full max-w-xl mx-4 z-10 overflow-hidden">
+                <div className="flex items-center justify-between px-6 py-3 border-b">
+                  <div className="flex items-center gap-2 text-gray-700 font-bold"><FaBook /> <span>Pinjam Buku</span></div>
+                  <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div><label className="block text-xs text-gray-600 mb-1">Judul Buku</label><input readOnly value={selectedBook.title} className="w-full px-4 py-2 border rounded-lg bg-gray-50" /></div>
+                  <div><label className="block text-xs text-gray-600 mb-1">Kategori</label><input readOnly value={selectedBook.category || 'Umum'} className="w-full px-4 py-2 border rounded-lg bg-gray-50" /></div>
+                  <div><label className="block text-xs text-gray-600 mb-1">Kode Buku</label><input readOnly value={selectedBook.id} className="w-full px-4 py-2 border rounded-lg bg-gray-50" /></div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Tanggal Pinjam</label>
+                    <div className="flex items-center gap-2">
+                      <input type="date" value={borrowDate} onChange={(e) => setBorrowDate(e.target.value)} className="px-4 py-2 border rounded-lg" />
+                      <div className="text-sm text-gray-500">{formatDisplayDate(borrowDate)}</div>
+                    </div>
+                  </div>
+                  <div className="p-4 bg-teal-50 border-l-4 border-teal-400 rounded">
+                    <p className="text-sm text-teal-900 font-semibold">Batas peminjaman: <span className="font-bold">5 hari kerja</span></p>
+                    <p className="text-sm text-teal-900">Denda keterlambatan: <span className="font-bold">Rp 1.000/hari</span></p>
+                  </div>
+                </div>
+                <div className="px-6 py-4 border-t flex justify-end gap-3">
+                  <button onClick={() => { setIsModalOpen(false); setSelectedBook(null); }} className="px-4 py-2 rounded-md bg-gray-500 text-white">Batal</button>
+                  <button onClick={handleConfirmBorrow} className="px-4 py-2 rounded-md bg-orange-500 text-white font-bold">✓ Konfirmasi Peminjaman</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+================================================================================
+File: app\user\dashboard\informasi\page.tsx
+================================================================================
+'use client';
+
+import React, { useState } from 'react';
+import Navbar from '../../../components/navbar';
+import Sidebar from '../../../components/sidebar';
+import { 
+  FaInfoCircle, 
+  FaClock,
+  FaPhoneAlt,
+  FaInstagram,
+  FaEnvelope,
+  FaMapMarkerAlt,
+  FaExclamationTriangle,
+  FaChevronDown,
+  FaQuestionCircle
+} from 'react-icons/fa';
+
+export default function InformasiPage() {
+  const [expandedFaq, setExpandedFaq] = useState(0);
+
+  const faqItems = [
+    {
+      question: 'Bagaimana cara menjadi anggota?',
+      answer: 'Mahasiswa JTIK dapat mendaftar melalui halaman registrasi dengan mengisi form dan melengkapi data diri.'
+    },
+    {
+      question: 'Berapa maksimal buku yang bisa dipinjam?',
+      answer: 'Setiap anggota dapat meminjam maksimal 3 buku dalam satu waktu.'
+    },
+    {
+      question: 'Bagaimana cara perpanjangan peminjaman?',
+      answer: 'Perpanjangan dapat dilakukan dengan menghubungi admin perpustakaan sebelum jatuh tempo.'
+    }
+  ];
+
+  return (
+    /* LOCK VIEWPORT: h-screen and overflow-hidden ensures the browser scrollbar stays hidden */
+    <div className="h-screen bg-white flex flex-col font-sans overflow-hidden">
+      
+      {/* Shared Navbar component */}
+      <Navbar />
+
+      {/* FILL HEIGHT: h-full ensures the container takes the space below the navbar */}
+      <div className="flex pt-16 h-full">
+        
+        {/* Shared Sidebar component */}
+        <Sidebar />
+
+        {/* FIXED: Changed p-8 to pt-2 px-8 pb-8 to remove the top gap */}
+        <main className="flex-1 md:ml-64 pt-2 px-8 pb-8 bg-white overflow-y-auto">
+          
+          {/* Header Section */}
+          <div className="flex justify-between items-center mb-6 mt-8">
+            <div className="flex items-center gap-3">
+              <div className="bg-orange-500 p-2 rounded text-white">
+                <FaInfoCircle />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800">Informasi Perpustakaan</h2>
+            </div>
+            <p className="text-sm text-gray-600">Tata tertib dan Informasi lengkap perpustakaan JTIK</p>
+          </div>
+
+          {/* Banner */}
+          <div className="bg-[#172e5f] text-white p-6 rounded-xl mb-8 text-center">
+            <p className="text-sm opacity-80 flex items-center justify-center gap-2 mb-1">
+               Perpustakaan JTIK
+            </p>
+            <h3 className="text-xl font-bold">Jurusan Teknik Informatika dan Komputer</h3>
+            <p className="text-sm opacity-80">Universitas Negeri Makassar</p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* LEFT COLUMN: Rules & Hours */}
+            <div className="lg:col-span-2 space-y-8">
+              
+              {/* Rules Section */}
+              <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
+                <div className="bg-[#172e5f] text-white px-6 py-3 font-bold flex items-center gap-2">
+                   Tata Tertib Perpustakaan
+                </div>
+                <div className="p-6 space-y-6">
+                  {[
+                    { id: 1, title: 'KETENANGAN AND KETERTIBAN', desc: 'Mohon untuk tidak berisik agar lingkungan perpustakaan tetap tenang dan kondusif untuk belajar.' },
+                    { id: 2, title: 'PENYIMPANAN BARANG', desc: 'Harap menaruh tas and sepatu di tempat yang telah disediakan untuk menjaga kebersihan and ketertiban.' },
+                    { id: 3, title: 'PENGEMBALIAN BUKU', desc: 'Pastikan untuk mengembalikan buku and skripsi ke tempatnya setelah selesai digunakan.' },
+                    { id: 4, title: 'KEBERSIHAN', desc: 'Dilarang membawa makanan and minuman ke dalam perpustakaan untuk menjaga kebersihan.' }
+                  ].map((rule) => (
+                    <div key={rule.id} className="flex gap-4 p-4 bg-gray-50 rounded-lg border-l-4 border-orange-500">
+                      <div className="bg-orange-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shrink-0">
+                        {rule.id}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-sm text-gray-800 mb-1">{rule.title}</h4>
+                        <p className="text-xs text-gray-600 leading-relaxed">{rule.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Operating Hours */}
+              <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                <div className="bg-[#172e5f] text-white px-6 py-3 font-bold flex items-center gap-2">
+                  <FaClock /> Jam Operasional
+                </div>
+                <div className="p-6 space-y-4">
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="font-bold text-gray-700">Senin - Jumat</span>
+                    <span className="text-orange-600 font-bold">08:00 - 16:00 WITA</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="font-bold text-gray-700">Sabtu</span>
+                    <span className="text-orange-600 font-bold">08:00 - 12:00 WITA</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="font-bold text-gray-700">Minggu & Hari Libur</span>
+                    <span className="text-red-500 font-bold">Tutup</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN: Contact & Loan Policy */}
+            <div className="space-y-8">
+              
+              {/* Contact Us */}
+              <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
+                <div className="bg-[#172e5f] text-white px-6 py-3 font-bold flex items-center gap-2">
+                  <FaPhoneAlt className="text-xs" /> Kontak Kami
+                </div>
+                <div className="p-4 space-y-4">
+                  <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="bg-orange-100 p-2 rounded text-orange-600"><FaEnvelope /></div>
+                    <div>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase">Email</p>
+                      <p className="text-xs font-medium text-gray-700">perpustakaanjtikunm@gmail.com</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="bg-pink-100 p-2 rounded text-pink-600"><FaInstagram /></div>
+                    <div>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase">Instagram</p>
+                      <p className="text-xs font-medium text-gray-700">@pustaka_jtik</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="bg-blue-100 p-2 rounded text-blue-600"><FaMapMarkerAlt /></div>
+                    <div>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase">Lokasi</p>
+                      <p className="text-xs font-medium text-gray-700">Gedung JTIK, Universitas Negeri Makassar</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Loan Policy */}
+              <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                <div className="bg-[#172e5f] text-white px-6 py-3 font-bold flex items-center gap-2">
+                  <FaInfoCircle className="text-xs" /> Ketentuan Peminjaman
+                </div>
+                <div className="p-4 space-y-4">
+                  <div className="flex items-start gap-3 p-2">
+                    <FaClock className="text-orange-500 mt-1" />
+                    <div>
+                      <p className="text-xs font-bold">Batas Peminjaman</p>
+                      <p className="text-[10px] text-gray-500">5 hari kerja</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-2">
+                    <FaExclamationTriangle className="text-orange-500 mt-1" />
+                    <div>
+                      <p className="text-xs font-bold">Denda Keterlambatan</p>
+                      <p className="text-[10px] text-gray-500">Rp 1.000/hari (Sabtu & Minggu tidak dihitung)</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-2">
+                    <FaExclamationTriangle className="text-red-500 mt-1" />
+                    <div>
+                      <p className="text-xs font-bold">Buku Hilang</p>
+                      <p className="text-[10px] text-gray-500">Denda akumulasi + Buku diganti yang baru + Surat pernyataan</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* FAQ Section */}
+              <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
+                <div className="bg-[#172e5f] text-white px-6 py-3 font-bold flex items-center gap-2">
+                  <FaQuestionCircle className="text-xs" /> FAQ
+                </div>
+                <div className="p-2 space-y-2">
+                  {faqItems.map((faq, index) => (
+                    <div key={index}>
+                      <button 
+                        onClick={() => setExpandedFaq(expandedFaq === index ? -1 : index)}
+                        className={`w-full flex justify-between items-center p-3 rounded-lg text-xs font-bold border transition-all ${
+                          expandedFaq === index 
+                            ? 'bg-[#cfe2ff] text-gray-900 border-[#b6d4ff]' 
+                            : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                        }`}
+                      >
+                        {faq.question}
+                        <FaChevronDown className={`transition-transform duration-300 ${expandedFaq === index ? 'rotate-180' : ''}`} />
+                      </button>
+                      {expandedFaq === index && (
+                        <div className="p-3 text-sm font-semibold text-gray-700 bg-gray-50 border border-gray-200 border-t-0 rounded-b-lg animate-in fade-in slide-in-from-top-2 duration-300">
+                          {faq.answer}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+
+================================================================================
+File: app\user\dashboard\page.tsx
+================================================================================
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useRouter } from 'next/navigation';
+import Navbar from '../../components/navbar';
+import Sidebar from '../../components/sidebar';
+import { FaBook, FaHistory, FaCheckCircle, FaUndo, FaExclamationTriangle } from 'react-icons/fa';
+
+export default function DashboardPage() {
+  const [userData, setUserData] = useState<any>(null);
+  const [borrowedBooks, setBorrowedBooks] = useState<any[]>([]);
+  const [borrowHistory, setBorrowHistory] = useState<any[]>([]);
+  
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.replace('/');
+      return;
+    }
+
+    const fetchProfile = async () => {
+      try {
+        const response = await axios.get('http://127.0.0.1:8000/api/user-profile', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        });
+        setUserData(response.data);
+      } catch (error) {
+        // Fallback for simulation/dev
+        setUserData({ name: "User", nim: "2026xxxx" });
+      }
+    };
+
+    const fetchBorrowedBooks = () => {
+      // Logic sync: Pull from the master context key 'borrowed_books'
+      // This allows admin returns to reflect here automatically
+      const storedData = JSON.parse(localStorage.getItem('borrowed_books') || '{"active": [], "history": []}');
+      setBorrowedBooks(storedData.active || []);
+      setBorrowHistory(storedData.history || []);
+    };
+
+    fetchProfile();
+    fetchBorrowedBooks();
+
+    // Sync if storage changes in other tabs
+    window.addEventListener('storage', fetchBorrowedBooks);
+    return () => window.removeEventListener('storage', fetchBorrowedBooks);
+  }, [router]);
+
+  // --- LOGIC: CHECK IF LATE (Based on Project Context Feb 12, 2026) ---
+  const checkStatus = (dueDateStr: string) => {
+    if (!dueDateStr) return { label: 'AKTIF', isLate: false };
+    
+    const today = new Date('2026-02-12'); 
+    const dueDate = new Date(dueDateStr);
+
+    if (today > dueDate) {
+      return { label: 'TERLAMBAT', isLate: true };
+    }
+    return { label: 'AKTIF', isLate: false };
+  };
+
+  return (
+    <div className="h-screen bg-white flex flex-col overflow-hidden">
+      <Navbar />
+      
+      <div className="flex pt-16 h-full">
+        <Sidebar />
+
+        <main className="flex-1 md:ml-64 pt-2 px-8 pb-8 bg-white overflow-y-auto">
+          
+          <div className="flex justify-between items-end mb-8 mt-8">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">Dashboard Anggota</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Selamat datang, <span className="font-bold text-orange-600">{userData?.name || '...'}</span>!
+              </p>
+            </div>
+            
+            <div className="text-right hidden sm:block">
+              {userData?.nim && (
+                <span className="text-xs font-bold bg-[#172e5f] text-white px-3 py-1 rounded-full">
+                  {userData.nim}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* --- STATS CARDS --- */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-white p-6 rounded-xl shadow-sm flex items-center gap-5 border border-gray-200 transition-transform hover:-translate-y-1 duration-300">
+              <div className="bg-blue-100 p-4 rounded-lg text-blue-600 text-2xl shadow-lg">
+                <FaBook />
+              </div>
+              <div>
+                <h3 className="text-3xl font-bold text-gray-800">{borrowedBooks.length}</h3>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Sedang Dipinjam</p>
+              </div>
+            </div>
+            
+            <div className="bg-white p-6 rounded-xl shadow-sm flex items-center gap-5 border border-gray-200 transition-transform hover:-translate-y-1 duration-300">
+              <div className="bg-orange-500 p-4 rounded-lg text-white text-2xl shadow-lg">
+                <FaHistory />
+              </div>
+              <div>
+                <h3 className="text-3xl font-bold text-gray-800">{borrowHistory.length}</h3>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Riwayat</p>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl shadow-sm flex items-center gap-5 border border-gray-200 transition-transform hover:-translate-y-1 duration-300">
+              <div className="bg-[#a3e635] p-4 rounded-lg text-white text-2xl shadow-lg">
+                <FaCheckCircle />
+              </div>
+              <div>
+                <h3 className="text-3xl font-bold text-gray-800">
+                  {borrowedBooks.some(b => checkStatus(b.due_date || b.jatuh_tempo).isLate) ? 'Terdeteksi' : '0'}
+                </h3>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Denda Terlambat</p>
+              </div>
+            </div>
+          </div>
+
+          {/* --- ACTIVE BORROWINGS TABLE --- */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+            <div className="bg-[#172e5f] px-6 py-4 flex items-center gap-2 border-b-4 border-orange-500">
+              <FaBook className="text-white" />
+              <h3 className="text-white font-bold tracking-wide text-base">Buku yang Sedang Dipinjam</h3>
+            </div>
+            <div className="p-0 overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="text-gray-800 text-sm font-bold border-b-2 border-orange-500">
+                    <th className="px-6 py-4">Judul Buku</th>
+                    <th className="px-6 py-4">Tanggal Pinjam</th>
+                    <th className="px-6 py-4">Jatuh Tempo</th>
+                    <th className="px-6 py-4 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm text-gray-800">
+                  {borrowedBooks.length > 0 ? (
+                    borrowedBooks.map((book: any, index: number) => {
+                      const status = checkStatus(book.due_date || book.jatuh_tempo);
+                      return (
+                        <tr 
+                          key={index} 
+                          className="border-b border-gray-200 hover:bg-gray-100 transition-colors"
+                        >
+                          <td className="px-6 py-4 font-medium">
+                            {book.book_title || book.title || book.judul_buku || '-'}
+                          </td>
+                          <td className="px-6 py-4">{book.borrow_date || book.tgl_pinjam || '-'}</td>
+                          <td className="px-6 py-4">{book.due_date || book.jatuh_tempo || '-'}</td>
+                          <td className="px-6 py-4 text-right">
+                            <span className={`${status.isLate ? 'bg-red-600' : 'bg-green-600'} text-white px-3 py-1 rounded-full text-[10px] font-extrabold uppercase`}>
+                              {status.label}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr className="border-b border-gray-200">
+                      <td colSpan={4} className="px-6 py-4 text-center text-gray-500">Tidak ada buku yang sedang dipinjam</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* --- HISTORY TABLE --- */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+            <div className="bg-[#172e5f] px-6 py-4 flex items-center gap-2 border-b-4 border-orange-500">
+              <FaHistory className="text-white text-lg" />
+              <h3 className="text-white font-bold tracking-wide text-base">Riwayat Peminjaman</h3>
+            </div>
+            <div className="p-0 overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="text-gray-800 text-sm font-bold border-b-2 border-orange-500">
+                    <th className="px-6 py-4">Judul Buku</th>
+                    <th className="px-6 py-4">Tgl Pinjam</th>
+                    <th className="px-6 py-4">Tgl Kembali</th>
+                    <th className="px-6 py-4 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm text-gray-800">
+                  {borrowHistory.length > 0 ? (
+                    borrowHistory.map((book: any, index: number) => (
+                      <tr key={index} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 font-medium">{book.book_title || book.title || book.judul_buku || '-'}</td>
+                        <td className="px-6 py-4">{book.borrow_date || book.tgl_pinjam || '-'}</td>
+                        <td className="px-6 py-4">{book.return_date || book.tgl_kembali || '-'}</td>
+                        <td className="px-6 py-4 text-right">
+                          <span className="bg-gray-500 text-white px-3 py-1 rounded-full text-[10px] font-extrabold uppercase">
+                            Selesai
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr className="border-b border-gray-200">
+                      <td colSpan={4} className="px-6 py-4 text-center text-gray-500">Tidak ada riwayat peminjaman</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </main>
+      </div>
+    </div>
+  );
+}
+
+================================================================================
+File: app\user\dashboard\profile\page.tsx
+================================================================================
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useRouter } from 'next/navigation';
+import Navbar from '../../../components/navbar';
+import Sidebar from '../../../components/sidebar';
+import { 
+  FaUser, FaIdCard, FaGraduationCap, FaUsers, 
+  FaEnvelope, FaPhone, FaQrcode, FaEdit, FaSave, FaTimes 
+} from 'react-icons/fa';
+
+interface UserData {
+  name: string;
+  nim: string;
+  prodi: string;
+  kelas: string;
+  email: string;
+  no_hp: string;
+}
+
+interface ProfileRowProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  isEditing: boolean;
+  onChange: (val: string) => void;
+}
+
+interface ActivityLog {
+  id: number;
+  type: string;
+  description: string;
+  timestamp: string;
+  icon_type: string;
+}
+
+export default function UserProfilePage() {
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState<UserData>({
+    name: '', nim: '', prodi: '', kelas: '', email: '', no_hp: ''
+  });
+  const [message, setMessage] = useState({ type: '', text: '' });
+  const [passwordData, setPasswordData] = useState({
+    old_password: '',
+    new_password: '',
+    new_password_confirmation: ''
+  });
+  const [passwordMessage, setPasswordMessage] = useState({ type: '', text: '' });
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
+
+  if (typeof window !== 'undefined' && !localStorage.getItem('token')) {
+    window.location.href = '/';
+    return null;
+  }
+
+  useEffect(() => {
+    fetchProfile();
+    fetchActivityLogs();
+  }, []);
+
+  const fetchProfile = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await axios.get('http://127.0.0.1:8000/api/user-profile', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setUserData(response.data);
+      setFormData(response.data);
+    } catch (error) {
+      localStorage.removeItem('token');
+      window.location.href = '/';
+    }
+  };
+
+  const fetchActivityLogs = async () => {
+    const token = localStorage.getItem('token');
+    setLoadingActivity(true);
+    try {
+      const response = await axios.get('http://127.0.0.1:8000/api/activity-logs', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setActivityLogs(response.data || []);
+    } catch (error: any) {
+      console.error('Failed to fetch activity logs:', error.response?.data || error.message);
+      setActivityLogs([]); // Set empty array on error
+    } finally {
+      setLoadingActivity(false);
+    }
+  };
+
+  const handleUpdate = async () => {
+    const token = localStorage.getItem('token');
+    setMessage({ type: '', text: '' });
+    try {
+      const response = await axios.put('http://127.0.0.1:8000/api/user-update', formData, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setUserData(response.data.user);
+      localStorage.setItem('user_name', response.data.user.name);
+      setIsEditing(false);
+      setMessage({ type: 'success', text: 'Profil berhasil diperbarui!' });
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+      
+      // Refresh activity logs after profile update
+      setTimeout(() => {
+        fetchActivityLogs();
+      }, 500);
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Gagal memperbarui profil. Periksa koneksi atau backend Laravel Anda.' });
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    const token = localStorage.getItem('token');
+    setPasswordMessage({ type: '', text: '' });
+
+    if (!passwordData.old_password || !passwordData.new_password || !passwordData.new_password_confirmation) {
+      setPasswordMessage({ type: 'error', text: 'Semua field harus diisi!' });
+      return;
+    }
+
+    if (passwordData.new_password !== passwordData.new_password_confirmation) {
+      setPasswordMessage({ type: 'error', text: 'Password baru dan konfirmasi tidak cocok!' });
+      return;
+    }
+
+    if (passwordData.new_password.length < 6) {
+      setPasswordMessage({ type: 'error', text: 'Password baru minimal 6 karakter!' });
+      return;
+    }
+
+    try {
+      await axios.post('http://127.0.0.1:8000/api/change-password', passwordData, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setPasswordMessage({ type: 'success', text: 'Password berhasil diubah!' });
+      setPasswordData({ old_password: '', new_password: '', new_password_confirmation: '' });
+      setTimeout(() => setPasswordMessage({ type: '', text: '' }), 3000);
+      fetchActivityLogs();
+    } catch (error: any) {
+      setPasswordMessage({ type: 'error', text: error.response?.data?.message || 'Gagal mengubah password. Periksa password lama Anda.' });
+    }
+  };
+
+  return (
+    <div className="h-screen bg-white flex flex-col font-sans overflow-hidden">
+      <Navbar />
+      <div className="flex pt-16 h-full">
+        <Sidebar />
+        <main className="flex-1 md:ml-64 p-8 bg-white overflow-y-auto scroll-smooth">
+          
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-800">Profil Anggota</h2>
+            <p className="text-sm text-gray-600">Informasi dan pengaturan akun Anda</p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+            
+            {/* LEFT: DATA ANGGOTA */}
+            <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="bg-[#172e5f] p-4 text-white text-xs font-bold flex items-center gap-2">
+                <FaIdCard /> DATA ANGGOTA
+              </div>
+              
+              <div className="p-10">
+                <div className="flex flex-col items-center mb-10">
+                  <div className="w-24 h-24 bg-orange-500 rounded-full flex items-center justify-center mb-4 border-4 border-orange-700 shadow-md text-white text-4xl font-bold">
+                    {userData?.name?.charAt(0) || '?'}
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-800 uppercase tracking-tight">{userData?.name}</h2>
+                </div>
+
+                <div className="space-y-1 mb-10">
+                  <ProfileRow icon={<FaUser />} label="Nama Lengkap" value={isEditing ? formData.name : userData?.name || ''} isEditing={isEditing} onChange={(val) => setFormData({...formData, name: val})} />
+                  <ProfileRow icon={<FaIdCard />} label="NIM" value={isEditing ? formData.nim : userData?.nim || ''} isEditing={isEditing} onChange={(val) => setFormData({...formData, nim: val})} />
+                  <ProfileRow icon={<FaGraduationCap />} label="Program Studi" value={isEditing ? formData.prodi : userData?.prodi || ''} isEditing={isEditing} onChange={(val) => setFormData({...formData, prodi: val})} />
+                  <ProfileRow icon={<FaUsers />} label="Kelas" value={isEditing ? formData.kelas : userData?.kelas || ''} isEditing={isEditing} onChange={(val) => setFormData({...formData, kelas: val})} />
+                  <ProfileRow icon={<FaEnvelope />} label="Email" value={isEditing ? formData.email : userData?.email || ''} isEditing={isEditing} onChange={(val) => setFormData({...formData, email: val})} />
+                  <ProfileRow icon={<FaPhone />} label="Nomor HP" value={isEditing ? formData.no_hp : userData?.no_hp || ''} isEditing={isEditing} onChange={(val) => setFormData({...formData, no_hp: val})} />
+                </div>
+
+                <div className="flex justify-center pt-6 border-t border-gray-100">
+                  {!isEditing ? (
+                    <button onClick={() => setIsEditing(true)} className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-orange-100 active:scale-95">
+                      <FaEdit /> Edit Profil
+                    </button>
+                  ) : (
+                    <div className="flex gap-4 w-full">
+                      <button onClick={() => { setIsEditing(false); setFormData(userData!); }} className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-bold flex items-center justify-center gap-2">
+                        <FaTimes /> Batal
+                      </button>
+                      <button onClick={handleUpdate} className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-green-100">
+                        <FaSave /> Simpan Perubahan
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {message.text && <p className={`mt-4 text-center text-sm font-bold ${message.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>{message.text}</p>}
+              </div>
+            </div>
+
+            {/* RIGHT: KARTU ANGGOTA (STICKY) */}
+            <div className="sticky top-8"> 
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden transition-all duration-300">
+                <div className="bg-[#172e5f] p-4 text-white text-xs font-bold flex items-center gap-2">
+                  <FaQrcode /> KARTU ANGGOTA
+                </div>
+                <div className="p-6">
+                  <div className="bg-gradient-to-b from-[#172e5f] to-[#0f172a] rounded-2xl p-6 text-center text-white aspect-[3/4] flex flex-col justify-between border-b-[10px] border-orange-500 shadow-xl relative overflow-hidden">
+                      <div className="bg-white w-32 h-32 mx-auto rounded-xl flex items-center justify-center border-4 border-white/10 shadow-inner">
+                          <FaQrcode size={80} className="text-[#172e5f]" />
+                      </div>
+                      <div className="relative z-10">
+                          <h3 className="font-bold uppercase tracking-wider text-sm truncate">{userData?.name}</h3>
+                          <p className="text-orange-400 text-xs font-mono font-bold">{userData?.nim}</p>
+                          <p className="text-gray-300 text-[10px] uppercase mt-1">{userData?.prodi} - {userData?.kelas}</p>
+                      </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* SECOND ROW: PASSWORD CHANGE & ACTIVITY LOG */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+            
+            {/* LEFT: PENGATURAN KEAMANAN (Password Change) */}
+            <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="bg-[#172e5f] p-4 text-white text-xs font-bold flex items-center gap-2">
+                <FaUser /> PENGATURAN KEAMANAN
+              </div>
+              
+              <div className="p-10">
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Password Lama</label>
+                    <input 
+                      type="password" 
+                      placeholder="Masukkan password lama Anda" 
+                      value={passwordData.old_password}
+                      onChange={(e) => setPasswordData({...passwordData, old_password: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition" 
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Password Baru</label>
+                    <input 
+                      type="password" 
+                      placeholder="Masukkan password baru Anda" 
+                      value={passwordData.new_password}
+                      onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition" 
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Konfirmasi Password Baru</label>
+                    <input 
+                      type="password" 
+                      placeholder="Konfirmasi password baru Anda" 
+                      value={passwordData.new_password_confirmation}
+                      onChange={(e) => setPasswordData({...passwordData, new_password_confirmation: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition" 
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-center pt-6 border-t border-gray-100 mt-8">
+                  <button 
+                    onClick={handlePasswordChange}
+                    className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-orange-100 active:scale-95">
+                    <FaSave /> Ubah Password
+                  </button>
+                </div>
+
+                {passwordMessage.text && <p className={`mt-4 text-center text-sm font-bold ${passwordMessage.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>{passwordMessage.text}</p>}
+              </div>
+            </div>
+
+            {/* RIGHT: LOG AKTIVITAS AKUN (Activity Log) */}
+            <div className="sticky top-8">
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="bg-[#172e5f] p-4 text-white text-xs font-bold flex items-center gap-2">
+                  <FaUser /> LOG AKTIVITAS AKUN
+                </div>
+                
+                <div className="p-6 max-h-96 overflow-y-auto">
+                  {loadingActivity ? (
+                    <p className="text-center text-gray-500 text-sm">Memuat aktivitas...</p>
+                  ) : activityLogs.length === 0 ? (
+                    <p className="text-center text-gray-500 text-sm">Belum ada aktivitas</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {activityLogs.map((log) => (
+                        <div key={log.id} className="border-b border-gray-200 pb-4 last:border-b-0">
+                          <div className="flex items-start gap-3">
+                            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                              log.icon_type === 'password' ? 'bg-orange-100' :
+                              log.icon_type === 'login' ? 'bg-green-100' :
+                              log.icon_type === 'profile' ? 'bg-blue-100' : 'bg-gray-100'
+                            }`}>
+                              <FaUser className={`text-sm ${
+                                log.icon_type === 'password' ? 'text-orange-600' :
+                                log.icon_type === 'login' ? 'text-green-600' :
+                                log.icon_type === 'profile' ? 'text-blue-600' : 'text-gray-600'
+                              }`} />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="text-sm font-bold text-gray-800">{log.description}</h4>
+                              <p className="text-xs text-gray-500">{log.timestamp}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function ProfileRow({ icon, label, value, isEditing, onChange }: ProfileRowProps) {
+  return (
+    <div className="flex justify-between items-center py-4 border-b border-gray-200 hover:bg-gray-50 px-2 rounded-lg gap-4">
+      <span className="text-gray-600 text-sm flex items-center gap-3 shrink-0">
+        <span className="text-orange-500">{icon}</span> {label}
+      </span>
+      {isEditing ? (
+        <input type="text" value={value} onChange={(e) => onChange(e.target.value)} className="bg-white border border-orange-300 rounded-md px-3 py-1 text-sm font-bold text-gray-800 focus:ring-2 focus:ring-orange-500 outline-none w-full max-w-[200px]" />
+      ) : (
+        <span className="font-bold text-gray-700 text-sm uppercase truncate">{value || '-'}</span>
+      )}
+    </div>
+  );
+}
+
+
+================================================================================
+File: components\admin\Sidebar.tsx
+================================================================================
+"use client";
+
+import React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { 
+  FaHome, FaBook, FaUsers, FaClipboardList, FaWallet, 
+  FaQrcode, FaChartBar, FaFileAlt, FaInfoCircle
+} from "react-icons/fa";
+
+export default function Sidebar() {
+  const pathname = usePathname();
+
+  const menuItems = [
+    { name: "Dashboard", icon: FaHome, path: "/dashboard" },
+    { name: "Kelola Buku", icon: FaBook, path: "/buku" },
+    { name: "Kelola User", icon: FaUsers, path: "/users" },
+    { name: "Peminjaman", icon: FaClipboardList, path: "/peminjaman" },
+    { name: "Kelola Denda", icon: FaWallet, path: "/denda" },
+    { name: "Buku Tamu & Scan QR", icon: FaQrcode, path: "/guest-book" },
+    { name: "Laporan Keuangan", icon: FaChartBar, path: "/laporan" },
+    { name: "Laporan Lainnya", icon: FaFileAlt, path: "/laporan-lainnya" },
+    { name: "Informasi", icon: FaInfoCircle, path: "/informasi" },
+  ];
+
+  // Helper function to style active links
+  const getLinkStyle = (path: string) => {
+    const isActive = pathname === path || pathname.startsWith(path);
+    return isActive
+      ? "flex items-center gap-3 px-6 py-3 bg-[#172e5f] text-white border-l-4 border-orange-500 transition-all relative"
+      : "flex items-center gap-3 px-6 py-3 text-gray-700 hover:text-[#172e5f] hover:font-bold hover:translate-x-1 transition-all transition-delay duration-200 relative group";
+  };
+
+  return (
+    <div className="h-full">
+      <style>{`
+        .group:hover::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(to right, rgba(200, 200, 200, 0.2), rgba(200, 200, 200, 0));
+          border-radius: inherit;
+          pointer-events: none;
+          animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        .group:hover::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          width: 4px;
+          height: 32px;
+          background-color: #f97316;
+          border-radius: 0 4px 4px 0;
+          animation: slideIn 0.3s ease-out 0.15s forwards;
+          opacity: 0;
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            width: 0;
+          }
+          to {
+            opacity: 1;
+            width: 4px;
+          }
+        }
+      `}</style>
+      <div className="py-6">
+        <ul className="space-y-1">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            
+            return (
+              <li key={item.name}>
+                <Link 
+                  href={item.path} 
+                  className={getLinkStyle(item.path)}
+                >
+                  <Icon />
+                  <span className="font-medium">{item.name}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+
+================================================================================
+File: components\admin\TopNav.tsx
+================================================================================
+"use client";
+
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import axios from "axios";
+import { FaUser, FaSignOutAlt, FaGraduationCap } from "react-icons/fa";
+import { useRouter } from "next/navigation";
+
+export default function TopNav() {
+  const router = useRouter();
+  const [name, setName] = useState('...');
+
+  useEffect(() => {
+    // Get the name from localStorage instantly; if missing, try fetching profile
+    const storedName = localStorage.getItem('admin_name');
+    if (storedName) {
+      setName(storedName);
+      return;
+    }
+
+    const token = localStorage.getItem('admin_token');
+    if (!token) return;
+
+    // If localStorage doesn't have the name but we have a token, fetch profile
+    (async () => {
+      try {
+        const resp = await axios.get('http://127.0.0.1:8000/api/admin-profile', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const fetchedName = resp.data?.name || resp.data?.user?.name;
+        if (fetchedName) {
+          setName(fetchedName);
+          localStorage.setItem('admin_name', fetchedName);
+        }
+      } catch (e) {
+        // silent fail — keep placeholder
+      }
+    })();
+  }, []);
+
+  const handleLogout = async () => {
+    const token = localStorage.getItem('admin_token');
+    
+    // 1. Immediately Clear Local Storage
+    // We do this BEFORE the API call so the user is "logged out" locally instantly
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_name');
+
+    try {
+      if (token) {
+        // 2. Tell Laravel to kill the session (Background task)
+        await axios.post('http://127.0.0.1:8000/api/admin-logout', {}, {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Server-side logout failed, but local session cleared.");
+    } finally {
+      // 3. THE HISTORY KILLER
+      // window.location.href forces a full page reload and prevents 
+      // the "Back" button from showing the cached Dashboard state.
+      window.location.href = '/admin-login'; 
+    }
+  };
+
+  return (
+    <nav className="bg-[#172e5f] text-white h-16 flex items-center justify-between px-6 shadow-md fixed w-full z-20">
+      <div className="flex items-center gap-3">
+        <FaGraduationCap className="text-3xl text-orange-500" />
+        <h1 className="text-xl font-bold tracking-wide">SIMPES JTIK</h1>
+      </div>
+
+      <div className="flex items-center gap-6">
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-2 hover:text-orange-400 cursor-pointer"
+        >
+          <div className="bg-white/10 p-1.5 rounded-full">
+            <FaUser className="text-sm" />
+          </div>
+          <span className="font-medium text-sm">{name}</span>
+        </Link>
+
+        <button 
+          onClick={handleLogout}
+          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-1.5 rounded-md text-sm font-bold flex items-center gap-2 shadow-lg shadow-orange-900/20"
+        >
+          <FaSignOutAlt /> Logout
+        </button>
+      </div>
+    </nav>
+  );
+}
+
+
+================================================================================
+File: eslint.config.mjs
+================================================================================
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  // Override default ignores of eslint-config-next.
+  globalIgnores([
+    // Default ignores of eslint-config-next:
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+  ]),
+]);
+
+export default eslintConfig;
+
+
+================================================================================
+File: next-env.d.ts
+================================================================================
+/// <reference types="next" />
+/// <reference types="next/image-types/global" />
+import "./.next/dev/types/routes.d.ts";
+
+// NOTE: This file should not be edited
+// see https://nextjs.org/docs/app/api-reference/config/typescript for more information.
+
+
+================================================================================
+File: next.config.ts
+================================================================================
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  /* config options here */
+};
+
+export default nextConfig;
+
+
+================================================================================
+File: package.json
+================================================================================
+{
+  "name": "projectlibrary2",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "axios": "^1.13.2",
+    "fuse.js": "^7.1.0",
+    "lucide-react": "^0.562.0",
+    "next": "16.1.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-icons": "^5.5.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
+
+
+================================================================================
+File: postcss.config.mjs
+================================================================================
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+
+export default config;
+
+
+================================================================================
+File: README.md
+================================================================================
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# projeklibrary
+
+
+================================================================================
+File: tsconfig.json
+================================================================================
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}
+
