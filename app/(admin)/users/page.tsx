@@ -1,183 +1,276 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Plus, Search, Edit, Trash2, X } from "lucide-react";
+import { 
+  FaUsers, 
+  FaUserPlus, 
+  FaSearch, 
+  FaEdit, 
+  FaTrash, 
+  FaListUl,
+  FaTimes,
+  FaEye,
+  FaSave,
+  FaInfo
+} from "react-icons/fa";
 
-export default function KelolaUser() {
-  const [users, setUsers] = useState<any[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+interface User {
+  id: number;
+  nim: string;
+  nama: string;
+  prodi: string;
+  kelas: string;
+  email: string;
+  noHp: string;
+  status: "Aktif" | "Nonaktif";
+}
+
+interface Notification {
+  id: number;
+  nim: string;
+  visible: boolean;
+}
+
+export default function KelolaUserPage() {
+  const [users, setUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedProdi, setSelectedProdi] = useState("Semua Prodi");
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<any>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
 
-  // Form State
-  const [formData, setFormData] = useState({ id: "", name: "", role: "Mahasiswa" });
+  const [formData, setFormData] = useState({
+    nim: "",
+    nama: "",
+    prodi: "PTIK",
+    kelas: "A",
+    email: "",
+    noHp: "",
+    status: "Aktif" as "Aktif" | "Nonaktif"
+  });
 
-  // Load Data
+  const prodiOptions = ["PTIK", "TEKOM", "PTE", "IK", "DKV"];
+
   useEffect(() => {
-    const savedUsers = localStorage.getItem("simpes_users");
-    if (savedUsers) {
-      setUsers(JSON.parse(savedUsers));
+    const saved = localStorage.getItem("simpes_users");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setUsers(parsed);
+        } else {
+          loadMockData();
+        }
+      } catch (e) {
+        loadMockData();
+      }
     } else {
-      const defaultData = [
-        { id: "2102095011", name: "Andi Mallarangeng", role: "Mahasiswa" },
-      ];
-      setUsers(defaultData);
+      loadMockData();
     }
-    setIsLoaded(true);
   }, []);
 
-  // Save Data
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem("simpes_users", JSON.stringify(users));
+  const loadMockData = () => {
+    const mockData: User[] = [
+      { id: 1, nim: "2021001", nama: "Ahmad Fajar", prodi: "PTIK", kelas: "A", email: "ahmad@email.com", noHp: "081234567890", status: "Aktif" },
+      { id: 2, nim: "2021002", nama: "Siti Nurhaliza", prodi: "TEKOM", kelas: "B", email: "siti@email.com", noHp: "081234567891", status: "Aktif" },
+    ];
+    setUsers(mockData);
+    localStorage.setItem("simpes_users", JSON.stringify(mockData));
+  };
+
+  const showNimNotification = (nim: string) => {
+    const id = Date.now();
+    setNotifications(prev => [...prev, { id, nim, visible: false }]);
+    setTimeout(() => {
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, visible: true } : n));
+    }, 10);
+    setTimeout(() => {
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, visible: false } : n));
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+      }, 500);
+    }, 3000);
+  };
+
+  const handleDelete = (id: number) => {
+    if (confirm("Apakah Anda yakin ingin menghapus anggota ini?")) {
+      const updated = users.filter((u) => u.id !== id);
+      setUsers(updated);
+      localStorage.setItem("simpes_users", JSON.stringify(updated));
     }
-  }, [users, isLoaded]);
-
-  const handleOpenAddModal = () => {
-    setEditingUser(null);
-    setFormData({ id: "", name: "", role: "Mahasiswa" });
-    setIsModalOpen(true);
   };
 
-  const handleOpenEditModal = (user: any) => {
-    setEditingUser(user);
-    setFormData(user);
-    setIsModalOpen(true);
-  };
-
-  const handleSave = (e: React.FormEvent) => {
+  const handleSaveUser = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingUser) {
-      setUsers(users.map(u => u.id === editingUser.id ? formData : u));
-    } else {
-      setUsers([...users, formData]);
-    }
+    const userPayload: User = { id: editingUser ? editingUser.id : Date.now(), ...formData };
+    const updatedUsers = editingUser 
+      ? users.map((u) => u.id === editingUser.id ? userPayload : u)
+      : [...users, userPayload];
+    setUsers(updatedUsers);
+    localStorage.setItem("simpes_users", JSON.stringify(updatedUsers));
+    closeModal();
+  };
+
+  const openAddModal = () => {
+    setEditingUser(null);
+    setFormData({ nim: "", nama: "", prodi: "PTIK", kelas: "A", email: "", noHp: "", status: "Aktif" });
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (user: User) => {
+    setEditingUser(user);
+    setFormData({ ...user });
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
     setIsModalOpen(false);
+    setEditingUser(null);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Hapus user ini?")) {
-      setUsers(users.filter(u => u.id !== id));
-    }
-  };
-
-  const filteredUsers = users.filter(u => 
-    u.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    u.id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  if (!isLoaded) return null;
+  const filteredUsers = users.filter((user) => {
+    const query = searchQuery.toLowerCase();
+    const matchesSearch = user.nama.toLowerCase().includes(query) || user.nim.toLowerCase().includes(query);
+    const matchesProdi = selectedProdi === "Semua Prodi" || user.prodi === selectedProdi;
+    return matchesSearch && matchesProdi;
+  });
 
   return (
-    <div className="space-y-6">
-      {/* Search and Add Action */}
-      <div className="flex justify-between items-center gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <input 
-            type="text" 
-            placeholder="Cari Nama / NIM..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-           className="w-full pl-12 pr-4 py-3 bg-white border border-gray-300 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none font-black text-gray-800 placeholder:text-gray-500"
-          />
+    <div className="relative space-y-6 p-2">
+      
+      {/* --- STACKING NOTIFICATION --- */}
+      <div className="fixed top-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none items-end">
+        {notifications.map((notif) => (
+          <div key={notif.id} className={`flex items-center gap-3 bg-white shadow-xl rounded-md py-3 px-5 border-l-[5px] border-[#12a0b8] transition-all duration-500 ease-out pointer-events-auto w-fit ${notif.visible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}>
+            <div className="bg-[#12a0b8] w-6 h-6 rounded-sm flex items-center justify-center text-white shrink-0"><FaInfo size={10} /></div>
+            <span className="text-[#1e293b] font-medium text-[14px] whitespace-nowrap">Melihat detail user: <span className="font-bold">{notif.nim}</span></span>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <FaUsers className="text-[#172e5f] text-3xl" />
+          <h1 className="text-2xl font-semibold text-[#172e5f]">Kelola User</h1>
         </div>
-        <button 
-          onClick={handleOpenAddModal}
-          className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-2xl font-black text-sm flex items-center gap-2 transition-all shadow-lg"
-        >
-          <Plus size={18} /> Tambah User
+        <button onClick={openAddModal} className="bg-[#f97316] hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 shadow-md transition-all">
+          <FaUserPlus size={16} /> Tambah User
         </button>
       </div>
 
-      {/* Table Container */}
-      <div className="bg-white rounded-[2.5rem] border border-gray-300 shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-gray-300">
-          <h2 className="text-xl font-black text-gray-800">Manajemen User</h2>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-[#172e5f] text-white p-4 flex items-center gap-3">
+          <FaListUl className="text-lg" />
+          <h3 className="text-md font-semibold">Daftar Anggota</h3>
         </div>
-        <table className="w-full">
-          <thead className="bg-[#172e5f] text-[10px] font-black uppercase text-white">
-            <tr>
-              <th className="p-6 text-left">NIM / NIDN</th>
-              <th className="p-6 text-left">Nama Lengkap</th>
-              <th className="p-6 text-left">Role</th>
-              <th className="p-6 text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-300">
-            {filteredUsers.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                <td className="p-6 text-gray-600 font-medium">{user.id}</td>
-                <td className="p-6 font-bold text-gray-800">{user.name}</td>
-                <td className="p-6">
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${
-                    user.role === 'Dosen' ? 'bg-purple-900/30 text-purple-300' : 'bg-blue-900/30 text-blue-300'
-                  }`}>
-                    {user.role}
-                  </span>
-                </td>
-                <td className="p-6">
-                  <div className="flex justify-center gap-2">
-                    <button 
-                      onClick={() => handleOpenEditModal(user)}
-                      className="bg-yellow-500 hover:bg-yellow-600 p-2.5 rounded-xl text-white transition-all"
-                    >
-                      <Edit size={16} />
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(user.id)}
-                      className="bg-red-500 hover:bg-red-600 p-2.5 rounded-xl text-white transition-all"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </td>
+
+        <div className="p-5 border-b border-gray-100 flex flex-col md:flex-row gap-4 bg-white">
+          <div className="relative flex-1">
+            <input type="text" placeholder="Cari anggota..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-white border border-gray-200 rounded-xl py-2.5 pl-5 pr-12 outline-none text-gray-700 focus:border-orange-500 transition-colors" />
+            <FaSearch className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300" />
+          </div>
+          <select value={selectedProdi} onChange={(e) => setSelectedProdi(e.target.value)} className="bg-white border border-gray-200 rounded-xl py-2.5 px-5 outline-none font-medium text-gray-600 min-w-[180px] focus:border-orange-500">
+            <option>Semua Prodi</option>
+            {prodiOptions.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-[#f97316]">
+                <th className="px-6 py-4 text-xs font-bold text-[#172e5f] uppercase tracking-wider">NIM</th>
+                <th className="px-6 py-4 text-xs font-bold text-[#172e5f] uppercase tracking-wider">Nama</th>
+                <th className="px-6 py-4 text-xs font-bold text-[#172e5f] uppercase tracking-wider">Prodi</th>
+                <th className="px-6 py-4 text-xs font-bold text-[#172e5f] uppercase tracking-wider text-center">Kelas</th>
+                <th className="px-6 py-4 text-xs font-bold text-[#172e5f] uppercase tracking-wider">Email</th>
+                <th className="px-6 py-4 text-xs font-bold text-[#172e5f] uppercase tracking-wider">No. HP</th>
+                <th className="px-6 py-4 text-xs font-bold text-[#172e5f] uppercase tracking-wider text-center">Status</th>
+                <th className="px-6 py-4 text-xs font-bold text-[#172e5f] uppercase tracking-wider text-center">Aksi</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredUsers.map((user) => (
+                <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 text-[13px] text-gray-600">{user.nim}</td>
+                  <td className="px-6 py-4 text-[13px] font-medium text-gray-800">{user.nama}</td>
+                  <td className="px-6 py-4 text-[13px] text-gray-600">{user.prodi}</td>
+                  <td className="px-6 py-4 text-[13px] text-gray-600 text-center">{user.kelas}</td>
+                  <td className="px-6 py-4 text-[13px] text-gray-600">{user.email}</td>
+                  <td className="px-6 py-4 text-[13px] text-gray-600">{user.noHp}</td>
+                  <td className="px-6 py-4 text-center">
+                    <span className={`px-3 py-1 rounded-full text-[11px] font-bold ${user.status === 'Aktif' ? 'bg-[#10b981] text-white' : 'bg-gray-400 text-white'}`}>
+                      {user.status.toUpperCase()}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <div className="flex justify-center gap-2">
+                      <button onClick={() => showNimNotification(user.nim)} className="p-2 bg-[#06b6d4] text-white rounded-lg hover:bg-cyan-600 transition-colors"><FaEye size={14} /></button>
+                      <button onClick={() => openEditModal(user)} className="p-2 bg-[#fbbf24] text-white rounded-lg hover:bg-amber-500 transition-colors"><FaEdit size={14} /></button>
+                      <button onClick={() => handleDelete(user.id)} className="p-2 bg-[#f43f5e] text-white rounded-lg hover:bg-rose-600 transition-colors"><FaTrash size={14} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Modal */}
+      {/* MODAL (Add/Edit) */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[2.5rem] w-full max-w-md p-10 shadow-2xl border border-gray-300">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-2xl font-black text-gray-800">{editingUser ? "Edit User" : "User Baru"}</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
-                <X size={24} />
-              </button>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl">
+            <div className="bg-[#172e5f] p-5 text-white flex justify-between items-center">
+              <h2 className="text-lg font-semibold uppercase">{editingUser ? "Edit Data Anggota" : "Tambah Anggota Baru"}</h2>
+              <button onClick={closeModal}><FaTimes size={18} /></button>
             </div>
-            <form onSubmit={handleSave} className="space-y-4">
-              <input 
-                required 
-                placeholder="NIM / NIDN (ID)" 
-                value={formData.id} 
-                onChange={e => setFormData({...formData, id: e.target.value})} 
-                disabled={!!editingUser}
-                className={`w-full p-4 bg-gray-50 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none font-bold text-gray-800 placeholder:text-gray-500 ${editingUser ? 'opacity-50 cursor-not-allowed' : ''}`} 
-              />
-              <input 
-                required 
-                placeholder="Nama Lengkap" 
-                value={formData.name} 
-                onChange={e => setFormData({...formData, name: e.target.value})} 
-                className="w-full p-4 bg-gray-50 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none font-bold text-gray-800 placeholder:text-gray-500" 
-              />
-              <select 
-                value={formData.role} 
-                onChange={e => setFormData({...formData, role: e.target.value})}
-                className="w-full p-4 bg-gray-50 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none font-bold text-gray-800"
-              >
-                <option value="Mahasiswa">Mahasiswa</option>
-                <option value="Dosen">Dosen</option>
-                <option value="Staf">Staf</option>
-              </select>
-              
-              <button type="submit" className="w-full bg-orange-500 py-4 text-white font-black rounded-2xl hover:bg-orange-600 transition-all shadow-lg mt-4">
-                Simpan User
-              </button>
+            <form onSubmit={handleSaveUser} className="p-6 space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-400 uppercase">NIM / ID User</label>
+                  <input required value={formData.nim} onChange={(e) => setFormData({...formData, nim: e.target.value})} className="w-full border-b border-gray-200 py-1.5 outline-none focus:border-orange-500 font-medium" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-400 uppercase">Nama Lengkap</label>
+                  <input required value={formData.nama} onChange={(e) => setFormData({...formData, nama: e.target.value})} className="w-full border-b border-gray-200 py-1.5 outline-none focus:border-orange-500 font-medium" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-400 uppercase">Program Studi</label>
+                  <select value={formData.prodi} onChange={(e) => setFormData({...formData, prodi: e.target.value})} className="w-full border-b border-gray-200 py-1.5 outline-none focus:border-orange-500 font-medium bg-white">
+                    {prodiOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-400 uppercase">Kelas</label>
+                  <input required value={formData.kelas} onChange={(e) => setFormData({...formData, kelas: e.target.value})} className="w-full border-b border-gray-200 py-1.5 outline-none focus:border-orange-500 font-medium" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-400 uppercase">Email</label>
+                  <input type="email" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full border-b border-gray-200 py-1.5 outline-none focus:border-orange-500 font-medium" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-400 uppercase">No. HP</label>
+                  <input required value={formData.noHp} onChange={(e) => setFormData({...formData, noHp: e.target.value})} className="w-full border-b border-gray-200 py-1.5 outline-none focus:border-orange-500 font-medium" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-400 uppercase">Status Keanggotaan</label>
+                <select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value as any})} className="w-full border-b border-gray-100 py-1.5 outline-none focus:border-orange-500 font-medium bg-white">
+                  <option value="Aktif">Aktif</option>
+                  <option value="Nonaktif">Nonaktif</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <button type="button" onClick={closeModal} className="px-6 py-2 bg-gray-100 text-gray-500 rounded-xl font-semibold uppercase tracking-wider text-xs">Batal</button>
+                <button type="submit" className="px-6 py-2 bg-[#f97316] text-white rounded-xl font-semibold uppercase tracking-wider text-xs flex items-center gap-2 shadow-md">
+                  <FaSave /> Simpan User
+                </button>
+              </div>
             </form>
           </div>
         </div>

@@ -27,6 +27,14 @@ interface ProfileRowProps {
   onChange: (val: string) => void;
 }
 
+interface ActivityLog {
+  id: number;
+  type: string;
+  description: string;
+  timestamp: string;
+  icon_type: string;
+}
+
 export default function UserProfilePage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -34,6 +42,14 @@ export default function UserProfilePage() {
     name: '', nim: '', prodi: '', kelas: '', email: '', no_hp: ''
   });
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [passwordData, setPasswordData] = useState({
+    old_password: '',
+    new_password: '',
+    new_password_confirmation: ''
+  });
+  const [passwordMessage, setPasswordMessage] = useState({ type: '', text: '' });
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
 
   if (typeof window !== 'undefined' && !localStorage.getItem('token')) {
     window.location.href = '/';
@@ -42,6 +58,7 @@ export default function UserProfilePage() {
 
   useEffect(() => {
     fetchProfile();
+    fetchActivityLogs();
   }, []);
 
   const fetchProfile = async () => {
@@ -58,6 +75,22 @@ export default function UserProfilePage() {
     }
   };
 
+  const fetchActivityLogs = async () => {
+    const token = localStorage.getItem('token');
+    setLoadingActivity(true);
+    try {
+      const response = await axios.get('http://127.0.0.1:8000/api/activity-logs', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setActivityLogs(response.data || []);
+    } catch (error: any) {
+      console.error('Failed to fetch activity logs:', error.response?.data || error.message);
+      setActivityLogs([]); // Set empty array on error
+    } finally {
+      setLoadingActivity(false);
+    }
+  };
+
   const handleUpdate = async () => {
     const token = localStorage.getItem('token');
     setMessage({ type: '', text: '' });
@@ -70,8 +103,45 @@ export default function UserProfilePage() {
       setIsEditing(false);
       setMessage({ type: 'success', text: 'Profil berhasil diperbarui!' });
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+      
+      // Refresh activity logs after profile update
+      setTimeout(() => {
+        fetchActivityLogs();
+      }, 500);
     } catch (error) {
       setMessage({ type: 'error', text: 'Gagal memperbarui profil. Periksa koneksi atau backend Laravel Anda.' });
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    const token = localStorage.getItem('token');
+    setPasswordMessage({ type: '', text: '' });
+
+    if (!passwordData.old_password || !passwordData.new_password || !passwordData.new_password_confirmation) {
+      setPasswordMessage({ type: 'error', text: 'Semua field harus diisi!' });
+      return;
+    }
+
+    if (passwordData.new_password !== passwordData.new_password_confirmation) {
+      setPasswordMessage({ type: 'error', text: 'Password baru dan konfirmasi tidak cocok!' });
+      return;
+    }
+
+    if (passwordData.new_password.length < 6) {
+      setPasswordMessage({ type: 'error', text: 'Password baru minimal 6 karakter!' });
+      return;
+    }
+
+    try {
+      await axios.post('http://127.0.0.1:8000/api/change-password', passwordData, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setPasswordMessage({ type: 'success', text: 'Password berhasil diubah!' });
+      setPasswordData({ old_password: '', new_password: '', new_password_confirmation: '' });
+      setTimeout(() => setPasswordMessage({ type: '', text: '' }), 3000);
+      fetchActivityLogs();
+    } catch (error: any) {
+      setPasswordMessage({ type: 'error', text: error.response?.data?.message || 'Gagal mengubah password. Periksa password lama Anda.' });
     }
   };
 
@@ -149,6 +219,106 @@ export default function UserProfilePage() {
                           <p className="text-gray-300 text-[10px] uppercase mt-1">{userData?.prodi} - {userData?.kelas}</p>
                       </div>
                   </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* SECOND ROW: PASSWORD CHANGE & ACTIVITY LOG */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+            
+            {/* LEFT: PENGATURAN KEAMANAN (Password Change) */}
+            <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="bg-[#172e5f] p-4 text-white text-xs font-bold flex items-center gap-2">
+                <FaUser /> PENGATURAN KEAMANAN
+              </div>
+              
+              <div className="p-10">
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Password Lama</label>
+                    <input 
+                      type="password" 
+                      placeholder="Masukkan password lama Anda" 
+                      value={passwordData.old_password}
+                      onChange={(e) => setPasswordData({...passwordData, old_password: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition" 
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Password Baru</label>
+                    <input 
+                      type="password" 
+                      placeholder="Masukkan password baru Anda" 
+                      value={passwordData.new_password}
+                      onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition" 
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Konfirmasi Password Baru</label>
+                    <input 
+                      type="password" 
+                      placeholder="Konfirmasi password baru Anda" 
+                      value={passwordData.new_password_confirmation}
+                      onChange={(e) => setPasswordData({...passwordData, new_password_confirmation: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition" 
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-center pt-6 border-t border-gray-100 mt-8">
+                  <button 
+                    onClick={handlePasswordChange}
+                    className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-orange-100 active:scale-95">
+                    <FaSave /> Ubah Password
+                  </button>
+                </div>
+
+                {passwordMessage.text && <p className={`mt-4 text-center text-sm font-bold ${passwordMessage.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>{passwordMessage.text}</p>}
+              </div>
+            </div>
+
+            {/* RIGHT: LOG AKTIVITAS AKUN (Activity Log) */}
+            <div className="sticky top-8">
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="bg-[#172e5f] p-4 text-white text-xs font-bold flex items-center gap-2">
+                  <FaUser /> LOG AKTIVITAS AKUN
+                </div>
+                
+                <div className="p-6 max-h-96 overflow-y-auto">
+                  {loadingActivity ? (
+                    <p className="text-center text-gray-500 text-sm">Memuat aktivitas...</p>
+                  ) : activityLogs.length === 0 ? (
+                    <p className="text-center text-gray-500 text-sm">Belum ada aktivitas</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {activityLogs.map((log) => (
+                        <div key={log.id} className="border-b border-gray-200 pb-4 last:border-b-0">
+                          <div className="flex items-start gap-3">
+                            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                              log.icon_type === 'password' ? 'bg-orange-100' :
+                              log.icon_type === 'login' ? 'bg-green-100' :
+                              log.icon_type === 'profile' ? 'bg-blue-100' : 'bg-gray-100'
+                            }`}>
+                              <FaUser className={`text-sm ${
+                                log.icon_type === 'password' ? 'text-orange-600' :
+                                log.icon_type === 'login' ? 'text-green-600' :
+                                log.icon_type === 'profile' ? 'text-blue-600' : 'text-gray-600'
+                              }`} />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="text-sm font-bold text-gray-800">{log.description}</h4>
+                              <p className="text-xs text-gray-500">{log.timestamp}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

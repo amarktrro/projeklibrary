@@ -4,27 +4,35 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
-  LayoutDashboard, Book, Users, ClipboardList, Wallet, 
-  QrCode, BarChart3, FileText, Info 
-} from "lucide-react";
+  FaHome, FaBook, FaUsers, FaClipboardList, FaWallet, 
+  FaQrcode, FaChartBar, FaFileAlt, FaInfoCircle
+} from "react-icons/fa";
 
 export default function Sidebar() {
   const pathname = usePathname();
 
   const menuItems = [
-    { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-    { name: "Kelola Buku", icon: Book, path: "/buku" },
-    { name: "Kelola User", icon: Users, path: "/users" },
-    { name: "Peminjaman", icon: ClipboardList, path: "/peminjaman" },
-    { name: "Kelola Denda", icon: Wallet, path: "/denda" },
-    { name: "Buku Tamu & Scan QR", icon: QrCode, path: "/guest-book" },
-    { name: "Laporan Keuangan", icon: BarChart3, path: "/laporan" },
-    { name: "Laporan Lainnya", icon: FileText, path: "/laporan-lainnya" },
-    { name: "Informasi", icon: Info, path: "/informasi" },
+    { name: "Dashboard", icon: FaHome, path: "/dashboard" },
+    { name: "Kelola Buku", icon: FaBook, path: "/buku" },
+    { name: "Kelola User", icon: FaUsers, path: "/users" },
+    { name: "Peminjaman", icon: FaClipboardList, path: "/peminjaman" },
+    { name: "Kelola Denda", icon: FaWallet, path: "/denda" },
+    { name: "Buku Tamu & Scan QR", icon: FaQrcode, path: "/guest-book" },
+    { name: "Laporan Keuangan", icon: FaChartBar, path: "/laporan" },
+    { name: "Laporan Lainnya", icon: FaFileAlt, path: "/laporan-lainnya" },
+    { name: "Informasi", icon: FaInfoCircle, path: "/informasi" },
   ];
 
+  // Helper function to style active links
+  const getLinkStyle = (path: string) => {
+    const isActive = pathname === path || pathname.startsWith(path);
+    return isActive
+      ? "flex items-center gap-3 px-6 py-3 bg-[#172e5f] text-white border-l-4 border-orange-500 transition-all relative"
+      : "flex items-center gap-3 px-6 py-3 text-gray-700 hover:text-[#172e5f] hover:font-bold hover:translate-x-1 transition-all transition-delay duration-200 relative group";
+  };
+
   return (
-    <div className="h-full bg-white flex flex-col p-6 pt-10">
+    <div className="h-full">
       <style>{`
         .group:hover::before {
           content: '';
@@ -43,9 +51,7 @@ export default function Sidebar() {
           content: '';
           position: absolute;
           left: 0;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 6px;
+          width: 4px;
           height: 32px;
           background-color: #f97316;
           border-radius: 0 4px 4px 0;
@@ -69,42 +75,28 @@ export default function Sidebar() {
           }
           to {
             opacity: 1;
-            width: 6px;
+            width: 4px;
           }
         }
       `}</style>
-      <nav className="flex-1 space-y-1">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.path;
-          
-          return (
-            <Link
-              key={item.name}
-              href={item.path}
-              className={`flex items-center gap-4 px-4 py-3 rounded-2xl font-bold text-sm transition-all relative group ${
-                isActive 
-                ? "bg-[#172e5f] text-white" 
-                : "text-gray-700 hover:text-[#172e5f] hover:font-bold hover:translate-x-1 transition-all duration-200"
-              }`}
-            >
-              {/* Orange Active Indicator from your screenshot */}
-              {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-orange-500 rounded-r-full shadow-md" />
-              )}
-              
-              <Icon size={18} className={isActive ? "text-white" : "text-gray-700"} />
-              <span className="truncate">{item.name}</span>
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Bottom Profile Circle */}
-      <div className="pt-6 border-t border-gray-200">
-        <div className="w-10 h-10 bg-[#172e5f] rounded-full flex items-center justify-center text-white font-black text-xs border-4 border-[#172e5f] shadow-sm">
-          N
-        </div>
+      <div className="py-6">
+        <ul className="space-y-1">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            
+            return (
+              <li key={item.name}>
+                <Link 
+                  href={item.path} 
+                  className={getLinkStyle(item.path)}
+                >
+                  <Icon />
+                  <span className="font-medium">{item.name}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </div>
   );
