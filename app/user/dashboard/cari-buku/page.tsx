@@ -1,21 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import axios from 'axios'; // Import axios
 import Fuse from 'fuse.js';
 import Navbar from '../../../components/navbar';
 import Sidebar from '../../../components/sidebar';
 import { 
-  FaSearch, 
-  FaBook, 
-  FaUser, 
-  FaTag, 
-  FaBookmark, 
-  FaHandHolding,
-  FaBan
+  FaSearch, FaBook, FaUser, FaTag, 
+  FaBookmark, FaHandHolding, FaBan
 } from 'react-icons/fa';
 
 export default function CariBukuPage() {
-  // --- SYNC WITH ADMIN DATA ---
   const [books, setBooks] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Semua Kategori");
@@ -25,11 +20,31 @@ export default function CariBukuPage() {
   const [notification, setNotification] = useState<{ show: boolean; bookCode: string; borrowDate: string }>({ show: false, bookCode: '', borrowDate: '' });
   const [notificationFading, setNotificationFading] = useState(false);
 
-  useEffect(() => {
-    const savedBooks = localStorage.getItem("simpes_inventory");
-    if (savedBooks) {
-      setBooks(JSON.parse(savedBooks));
+  const API_URL = "http://127.0.0.1:8000/api/buku";
+
+  // --- FETCH FROM BACKEND INSTEAD OF LOCALSTORAGE ---
+  const fetchBooks = async () => {
+    try {
+      const response = await axios.get(API_URL);
+      const mappedData = response.data.map((b: any) => ({
+        id_db: b.id,         // Hidden DB Primary Key
+        id: b.kode_buku,     // Maps to your 'Kode' display
+        title: b.judul,
+        author: b.penulis,
+        category: b.kategori,
+        publisher: b.penerbit,
+        year: b.tahun_terbit,
+        stock: b.stok,
+        available: b.tersedia // Maps to 'Tersedia' display
+      }));
+      setBooks(mappedData);
+    } catch (error) {
+      console.error("Error fetching books:", error);
     }
+  };
+
+  useEffect(() => {
+    fetchBooks();
   }, []);
 
   const formatDisplayDate = (iso: string) => {
@@ -50,61 +65,63 @@ export default function CariBukuPage() {
     setIsModalOpen(true);
   };
 
-  const handleConfirmBorrow = () => {
+  const handleConfirmBorrow = async () => {
     if (!selectedBook) return;
 
-    // --- LOGIC FIX: Subtract from 'available', NOT 'stock' ---
-    const updated = books.map(b => {
-      if (b.id === selectedBook.id) {
-        // We decrease the available count, leaving the stock (total) untouched
-        return { 
-          ...b, 
-          available: Math.max(0, (b.available || 0) - 1) 
-        };
-      }
-      return b;
-    });
+    try {
+      // Logic: Decrease available count in Backend
+      const updatedAvailable = Math.max(0, (selectedBook.available || 0) - 1);
+      
+      await axios.put(`${API_URL}/${selectedBook.id_db}`, {
+        // We must send all required fields to Laravel update
+        kode_buku: selectedBook.id,
+        judul: selectedBook.title,
+        penulis: selectedBook.author,
+        kategori: selectedBook.category,
+        penerbit: selectedBook.publisher,
+        tahun_terbit: selectedBook.year,
+        stok: selectedBook.stock,
+        tersedia: updatedAvailable 
+      });
 
-    setBooks(updated);
-    localStorage.setItem('simpes_inventory', JSON.stringify(updated));
-    
-    const borrowedBooksData = JSON.parse(localStorage.getItem('borrowed_books') || '{"active": [], "history": []}');
-    const newBorrow = {
-      title: selectedBook.title,
-      borrow_date: borrowDate,
-      due_date: new Date(new Date(borrowDate).getTime() + 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-    };
-    borrowedBooksData.active.push(newBorrow);
-    localStorage.setItem('borrowed_books', JSON.stringify(borrowedBooksData));
-    
-    setNotification({
-      show: true,
-      bookCode: selectedBook.id,
-      borrowDate: borrowDate
-    });
-    setNotificationFading(false);
-    
-    setTimeout(() => {
-      setNotificationFading(true);
-    }, 4500);
-    
-    setTimeout(() => {
-      setNotification({ ...notification, show: false });
+      // Refresh the list to show new 'Tersedia' count
+      fetchBooks();
+      
+      // Keep your existing notification and history logic
+      const borrowedBooksData = JSON.parse(localStorage.getItem('borrowed_books') || '{"active": [], "history": []}');
+      const newBorrow = {
+        title: selectedBook.title,
+        borrow_date: borrowDate,
+        due_date: new Date(new Date(borrowDate).getTime() + 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+      };
+      borrowedBooksData.active.push(newBorrow);
+      localStorage.setItem('borrowed_books', JSON.stringify(borrowedBooksData));
+      
+      setNotification({
+        show: true,
+        bookCode: selectedBook.id,
+        borrowDate: borrowDate
+      });
       setNotificationFading(false);
-    }, 5000);
-    
-    setIsModalOpen(false);
-    setSelectedBook(null);
+      
+      setTimeout(() => setNotificationFading(true), 4500);
+      setTimeout(() => {
+        setNotification({ ...notification, show: false });
+        setNotificationFading(false);
+      }, 5000);
+      
+      setIsModalOpen(false);
+      setSelectedBook(null);
+    } catch (error) {
+      alert("Gagal memproses peminjaman.");
+    }
   };
 
-  // --- FUZZY SEARCH LOGIC ---
   const filteredBooks = useMemo(() => {
     let listToSearch = books;
-
     if (selectedCategory !== "Semua Kategori") {
       listToSearch = books.filter(book => book.category === selectedCategory);
     }
-
     if (!searchQuery.trim()) return listToSearch;
 
     const fuse = new Fuse(listToSearch, {
@@ -112,11 +129,9 @@ export default function CariBukuPage() {
       threshold: 0.4,
       distance: 100,
     });
-
     return fuse.search(searchQuery).map(result => result.item);
   }, [searchQuery, selectedCategory, books]);
 
-  // --- Unique and Clean Category List ---
   const categories = useMemo(() => {
     const rawCategories = books.map(b => b.category).filter(Boolean);
     return ["Semua Kategori", ...Array.from(new Set(rawCategories))];
@@ -125,14 +140,8 @@ export default function CariBukuPage() {
   return (
     <div className="h-screen bg-white flex flex-col font-sans overflow-hidden">
       <style>{`
-        @keyframes slideInFromRight {
-          from { transform: translateX(100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes fadeOut {
-          from { opacity: 1; }
-          to { opacity: 0; }
-        }
+        @keyframes slideInFromRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
       `}</style>
       <Navbar />
 
@@ -150,10 +159,7 @@ export default function CariBukuPage() {
                   Peminjaman berhasil! Kode Buku: <span className="font-bold">{notification.bookCode}</span> Tanggal Pinjam: <span className="font-bold">{new Date(notification.borrowDate).toLocaleDateString('id-ID', { year: 'numeric', month: '2-digit', day: '2-digit' })}</span> Silakan tunjukkan QR code Anda ke petugas perpustakaan.
                 </p>
               </div>
-              <button 
-                onClick={() => setNotification({ ...notification, show: false })}
-                className="text-gray-400 hover:text-gray-600 text-lg flex-shrink-0"
-              >✕</button>
+              <button onClick={() => setNotification({ ...notification, show: false })} className="text-gray-400 hover:text-gray-600 text-lg flex-shrink-0">✕</button>
             </div>
           </div>
         </div>
@@ -161,13 +167,10 @@ export default function CariBukuPage() {
 
       <div className="flex pt-16 h-full">
         <Sidebar />
-
         <main className="flex-1 md:ml-64 p-8 bg-white overflow-y-auto">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-3">
-              <div className="bg-orange-500 p-2 rounded text-white">
-                <FaBook />
-              </div>
+              <div className="bg-orange-500 p-2 rounded text-white"><FaBook /></div>
               <h2 className="text-2xl font-bold text-gray-800">Daftar Buku</h2>
             </div>
             <p className="text-sm text-gray-600">Total {filteredBooks.length} buku ditemukan</p>
@@ -175,73 +178,46 @@ export default function CariBukuPage() {
 
           <div className="flex flex-col md:flex-row gap-4 mb-8 bg-gray-100 p-4 rounded-xl border border-gray-300">
             <div className="flex-1 relative">
-              <input 
-                type="text" 
-                placeholder="Cari judul buku, penulis, atau kode..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-4 pr-12 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none text-gray-800 font-medium placeholder:text-gray-500"
-              />
-              <div className="absolute right-4 top-3 text-gray-500">
-                <FaSearch />
-              </div>
+              <input type="text" placeholder="Cari judul buku, penulis, atau kode..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-4 pr-12 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none text-gray-800 font-medium placeholder:text-gray-500" />
+              <div className="absolute right-4 top-3 text-gray-500"><FaSearch /></div>
             </div>
-            
-            <select 
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="bg-white border border-gray-300 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-orange-500 min-w-[200px] font-medium text-gray-800"
-            >
-              {categories.map((cat, index) => (
-                <option key={`${cat}-${index}`} value={cat as string}>
-                  {cat as string}
-                </option>
-              ))}
+            <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="bg-white border border-gray-300 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-orange-500 min-w-[200px] font-medium text-gray-800">
+              {categories.map((cat, index) => (<option key={`${cat}-${index}`} value={cat as string}>{cat as string}</option>))}
             </select>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredBooks.length > 0 ? (
-              filteredBooks.map((book) => (
-                <div key={book.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm transform transition duration-200 hover:-translate-y-1 hover:shadow-lg overflow-hidden flex flex-col">
-                  <div className="bg-[#c1d095] h-48 flex items-center justify-center m-4 rounded-xl">
-                    <FaBook className="text-6xl text-[#172e5f]" />
-                  </div>
-                  <div className="px-6 pb-6 flex-1 flex flex-col">
-                    <h3 className="font-bold text-gray-800 text-lg mb-3 line-clamp-2">{book.title}</h3>
-                    <div className="space-y-2 mb-4 text-sm text-gray-600">
-                      <div className="flex items-center gap-2"><FaUser className="text-xs text-gray-500" /> {book.author}</div>
-                      <div className="flex items-center gap-2"><FaTag className="text-xs text-gray-500" /> {book.category || 'Umum'}</div>
-                      <div className="flex items-center gap-2"><FaBookmark className="text-xs text-gray-500" /> Kode: {book.id}</div>
-                    </div>
-                    <div className="mb-4">
-                      {/* --- Color reverted to Green (bg-green-600) and using 'available' property --- */}
-                      <span className={`${book.available > 0 ? 'bg-green-600' : 'bg-red-600'} text-white text-xs px-3 py-1 rounded-full font-bold`}>
-                        {book.available > 0 ? `Tersedia: ${book.available}` : 'Stok Habis'}
-                      </span>
-                    </div>
-
-                    {/* --- Borrow button logic updated to check 'available' --- */}
-                    {book.available > 0 ? (
-                      <button onClick={() => openBorrowModal(book)} className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold transition-colors mt-auto">
-                        <FaHandHolding /> Pinjam Buku
-                      </button>
-                    ) : (
-                      <button disabled className="w-full bg-gray-600 text-white py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold cursor-not-allowed mt-auto">
-                        <FaBan /> Tidak Tersedia
-                      </button>
-                    )}
-                  </div>
+            {filteredBooks.map((book) => (
+              <div key={book.id_db} className="bg-white rounded-2xl border border-gray-200 shadow-sm transform transition duration-200 hover:-translate-y-1 hover:shadow-lg overflow-hidden flex flex-col">
+                <div className="bg-[#c1d095] h-48 flex items-center justify-center m-4 rounded-xl">
+                  <FaBook className="text-6xl text-[#172e5f]" />
                 </div>
-              ))
-            ) : (
-              <div className="col-span-full py-20 text-center text-gray-400 font-bold">
-                Tidak ada buku yang sesuai dengan pencarian Anda.
+                <div className="px-6 pb-6 flex-1 flex flex-col">
+                  <h3 className="font-bold text-gray-800 text-lg mb-3 line-clamp-2">{book.title}</h3>
+                  <div className="space-y-2 mb-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-2"><FaUser className="text-xs text-gray-500" /> {book.author}</div>
+                    <div className="flex items-center gap-2"><FaTag className="text-xs text-gray-500" /> {book.category || 'Umum'}</div>
+                    <div className="flex items-center gap-2"><FaBookmark className="text-xs text-gray-500" /> Kode: {book.id}</div>
+                  </div>
+                  <div className="mb-4">
+                    <span className={`${book.available > 0 ? 'bg-green-600' : 'bg-red-600'} text-white text-xs px-3 py-1 rounded-full font-bold`}>
+                      {book.available > 0 ? `Tersedia: ${book.available}` : 'Stok Habis'}
+                    </span>
+                  </div>
+                  {book.available > 0 ? (
+                    <button onClick={() => openBorrowModal(book)} className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold transition-colors mt-auto">
+                      <FaHandHolding /> Pinjam Buku
+                    </button>
+                  ) : (
+                    <button disabled className="w-full bg-gray-600 text-white py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold cursor-not-allowed mt-auto">
+                      <FaBan /> Tidak Tersedia
+                    </button>
+                  )}
+                </div>
               </div>
-            )}
+            ))}
           </div>
 
-          {/* --- BORROW MODAL --- */}
           {isModalOpen && selectedBook && (
             <div className="fixed inset-0 z-50 flex items-center justify-center">
               <div className="absolute inset-0 bg-black/40" onClick={() => setIsModalOpen(false)} />
@@ -251,13 +227,13 @@ export default function CariBukuPage() {
                   <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
                 </div>
                 <div className="p-6 space-y-4">
-                  <div><label className="block text-xs text-gray-600 mb-1">Judul Buku</label><input readOnly value={selectedBook.title} className="w-full px-4 py-2 border rounded-lg bg-gray-50" /></div>
-                  <div><label className="block text-xs text-gray-600 mb-1">Kategori</label><input readOnly value={selectedBook.category || 'Umum'} className="w-full px-4 py-2 border rounded-lg bg-gray-50" /></div>
-                  <div><label className="block text-xs text-gray-600 mb-1">Kode Buku</label><input readOnly value={selectedBook.id} className="w-full px-4 py-2 border rounded-lg bg-gray-50" /></div>
+                  <div><label className="block text-xs text-gray-600 mb-1">Judul Buku</label><input readOnly value={selectedBook.title} className="w-full px-4 py-2 border rounded-lg bg-gray-50 outline-none" /></div>
+                  <div><label className="block text-xs text-gray-600 mb-1">Kategori</label><input readOnly value={selectedBook.category || 'Umum'} className="w-full px-4 py-2 border rounded-lg bg-gray-50 outline-none" /></div>
+                  <div><label className="block text-xs text-gray-600 mb-1">Kode Buku</label><input readOnly value={selectedBook.id} className="w-full px-4 py-2 border rounded-lg bg-gray-50 outline-none" /></div>
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Tanggal Pinjam</label>
                     <div className="flex items-center gap-2">
-                      <input type="date" value={borrowDate} onChange={(e) => setBorrowDate(e.target.value)} className="px-4 py-2 border rounded-lg" />
+                      <input type="date" value={borrowDate} onChange={(e) => setBorrowDate(e.target.value)} className="px-4 py-2 border rounded-lg outline-none" />
                       <div className="text-sm text-gray-500">{formatDisplayDate(borrowDate)}</div>
                     </div>
                   </div>

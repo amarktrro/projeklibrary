@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { 
   FaUsers, 
   FaUserPlus, 
@@ -42,42 +43,44 @@ export default function KelolaUserPage() {
   const [formData, setFormData] = useState({
     nim: "",
     nama: "",
-    prodi: "PTIK",
-    kelas: "A",
+    prodi: "",
+    kelas: "",
     email: "",
     noHp: "",
     status: "Aktif" as "Aktif" | "Nonaktif"
   });
 
-  const prodiOptions = ["PTIK", "TEKOM", "PTE", "IK", "DKV"];
+  // Ensure this matches your Laravel local URL
+  const API_URL = "http://127.0.0.1:8000/api/users";
 
-  useEffect(() => {
-    const saved = localStorage.getItem("simpes_users");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          setUsers(parsed);
-        } else {
-          loadMockData();
-        }
-      } catch (e) {
-        loadMockData();
-      }
-    } else {
-      loadMockData();
+  // --- 1. FETCH ACTUAL DATA FROM DATABASE ---
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get(API_URL);
+      
+      // We map the DB fields (name, no_hp) to your UI fields (nama, noHp)
+      const mappedData: User[] = response.data.map((u: any) => ({
+        id: u.id,
+        nim: u.nim || "",
+        nama: u.name || u.nama || "", // Fallback if DB uses 'name'
+        prodi: u.prodi || "",
+        kelas: u.kelas || "",
+        email: u.email || "",
+        noHp: u.no_hp || u.noHp || "", // Fallback if DB uses 'no_hp'
+        status: u.status || "Aktif"
+      }));
+      
+      setUsers(mappedData);
+    } catch (error) {
+      console.error("Gagal mengambil data dari server:", error);
     }
-  }, []);
-
-  const loadMockData = () => {
-    const mockData: User[] = [
-      { id: 1, nim: "2021001", nama: "Ahmad Fajar", prodi: "PTIK", kelas: "A", email: "ahmad@email.com", noHp: "081234567890", status: "Aktif" },
-      { id: 2, nim: "2021002", nama: "Siti Nurhaliza", prodi: "TEKOM", kelas: "B", email: "siti@email.com", noHp: "081234567891", status: "Aktif" },
-    ];
-    setUsers(mockData);
-    localStorage.setItem("simpes_users", JSON.stringify(mockData));
   };
 
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  // --- 2. NOTIFICATION LOGIC ---
   const showNimNotification = (nim: string) => {
     const id = Date.now();
     setNotifications(prev => [...prev, { id, nim, visible: false }]);
@@ -92,28 +95,49 @@ export default function KelolaUserPage() {
     }, 3000);
   };
 
-  const handleDelete = (id: number) => {
+  // --- 3. DELETE LOGIC ---
+  const handleDelete = async (id: number) => {
     if (confirm("Apakah Anda yakin ingin menghapus anggota ini?")) {
-      const updated = users.filter((u) => u.id !== id);
-      setUsers(updated);
-      localStorage.setItem("simpes_users", JSON.stringify(updated));
+      try {
+        await axios.delete(`${API_URL}/${id}`);
+        fetchUsers(); 
+      } catch (error) {
+        alert("Gagal menghapus data dari server.");
+      }
     }
   };
 
-  const handleSaveUser = (e: React.FormEvent) => {
+  // --- 4. SAVE / UPDATE LOGIC ---
+  const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    const userPayload: User = { id: editingUser ? editingUser.id : Date.now(), ...formData };
-    const updatedUsers = editingUser 
-      ? users.map((u) => u.id === editingUser.id ? userPayload : u)
-      : [...users, userPayload];
-    setUsers(updatedUsers);
-    localStorage.setItem("simpes_users", JSON.stringify(updatedUsers));
-    closeModal();
+    
+    const payload = {
+      nim: formData.nim,
+      name: formData.nama,   // Sending 'name' to Laravel
+      prodi: formData.prodi,
+      kelas: formData.kelas,
+      email: formData.email,
+      no_hp: formData.noHp,  // Sending 'no_hp' to Laravel
+      status: formData.status
+    };
+
+    try {
+      if (editingUser) {
+        await axios.put(`${API_URL}/${editingUser.id}`, payload);
+      } else {
+        // Use your specific create or register endpoint
+        await axios.post(API_URL, payload);
+      }
+      fetchUsers();
+      closeModal();
+    } catch (error) {
+      alert("Gagal menyimpan data. Pastikan NIM atau Email belum digunakan.");
+    }
   };
 
   const openAddModal = () => {
     setEditingUser(null);
-    setFormData({ nim: "", nama: "", prodi: "PTIK", kelas: "A", email: "", noHp: "", status: "Aktif" });
+    setFormData({ nim: "", nama: "", prodi: "", kelas: "", email: "", noHp: "", status: "Aktif" });
     setIsModalOpen(true);
   };
 
@@ -135,10 +159,13 @@ export default function KelolaUserPage() {
     return matchesSearch && matchesProdi;
   });
 
+  // Get unique prodi list for the filter dropdown
+  const dynamicProdiOptions = Array.from(new Set(users.map(u => u.prodi))).filter(p => p);
+
   return (
     <div className="relative space-y-6 p-2">
       
-      {/* --- STACKING NOTIFICATION --- */}
+      {/* NOTIFICATION STACK */}
       <div className="fixed top-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none items-end">
         {notifications.map((notif) => (
           <div key={notif.id} className={`flex items-center gap-3 bg-white shadow-xl rounded-md py-3 px-5 border-l-[5px] border-[#12a0b8] transition-all duration-500 ease-out pointer-events-auto w-fit ${notif.visible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}>
@@ -171,7 +198,7 @@ export default function KelolaUserPage() {
           </div>
           <select value={selectedProdi} onChange={(e) => setSelectedProdi(e.target.value)} className="bg-white border border-gray-200 rounded-xl py-2.5 px-5 outline-none font-medium text-gray-600 min-w-[180px] focus:border-orange-500">
             <option>Semua Prodi</option>
-            {prodiOptions.map((p) => <option key={p} value={p}>{p}</option>)}
+            {dynamicProdiOptions.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
 
@@ -190,28 +217,34 @@ export default function KelolaUserPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-[13px] text-gray-600">{user.nim}</td>
-                  <td className="px-6 py-4 text-[13px] font-medium text-gray-800">{user.nama}</td>
-                  <td className="px-6 py-4 text-[13px] text-gray-600">{user.prodi}</td>
-                  <td className="px-6 py-4 text-[13px] text-gray-600 text-center">{user.kelas}</td>
-                  <td className="px-6 py-4 text-[13px] text-gray-600">{user.email}</td>
-                  <td className="px-6 py-4 text-[13px] text-gray-600">{user.noHp}</td>
-                  <td className="px-6 py-4 text-center">
-                    <span className={`px-3 py-1 rounded-full text-[11px] font-bold ${user.status === 'Aktif' ? 'bg-[#10b981] text-white' : 'bg-gray-400 text-white'}`}>
-                      {user.status.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <div className="flex justify-center gap-2">
-                      <button onClick={() => showNimNotification(user.nim)} className="p-2 bg-[#06b6d4] text-white rounded-lg hover:bg-cyan-600 transition-colors"><FaEye size={14} /></button>
-                      <button onClick={() => openEditModal(user)} className="p-2 bg-[#fbbf24] text-white rounded-lg hover:bg-amber-500 transition-colors"><FaEdit size={14} /></button>
-                      <button onClick={() => handleDelete(user.id)} className="p-2 bg-[#f43f5e] text-white rounded-lg hover:bg-rose-600 transition-colors"><FaTrash size={14} /></button>
-                    </div>
-                  </td>
+              {filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-10 text-gray-400 text-sm">Tidak ada data ditemukan.</td>
                 </tr>
-              ))}
+              ) : (
+                filteredUsers.map((user) => (
+                  <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 text-[13px] text-gray-600">{user.nim}</td>
+                    <td className="px-6 py-4 text-[13px] font-medium text-gray-800">{user.nama}</td>
+                    <td className="px-6 py-4 text-[13px] text-gray-600">{user.prodi}</td>
+                    <td className="px-6 py-4 text-[13px] text-gray-600 text-center">{user.kelas}</td>
+                    <td className="px-6 py-4 text-[13px] text-gray-600">{user.email}</td>
+                    <td className="px-6 py-4 text-[13px] text-gray-600">{user.noHp}</td>
+                    <td className="px-6 py-4 text-center">
+                      <span className={`px-3 py-1 rounded-full text-[11px] font-bold ${user.status === 'Aktif' ? 'bg-[#10b981] text-white' : 'bg-gray-400 text-white'}`}>
+                        {user.status.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex justify-center gap-2">
+                        <button onClick={() => showNimNotification(user.nim)} className="p-2 bg-[#06b6d4] text-white rounded-lg hover:bg-cyan-600 transition-colors"><FaEye size={14} /></button>
+                        <button onClick={() => openEditModal(user)} className="p-2 bg-[#fbbf24] text-white rounded-lg hover:bg-amber-500 transition-colors"><FaEdit size={14} /></button>
+                        <button onClick={() => handleDelete(user.id)} className="p-2 bg-[#f43f5e] text-white rounded-lg hover:bg-rose-600 transition-colors"><FaTrash size={14} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -239,12 +272,12 @@ export default function KelolaUserPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-gray-400 uppercase">Program Studi</label>
-                  <select value={formData.prodi} onChange={(e) => setFormData({...formData, prodi: e.target.value})} className="w-full border-b border-gray-200 py-1.5 outline-none focus:border-orange-500 font-medium bg-white">
-                    {prodiOptions.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
+                  {/* FREE TEXT INPUT */}
+                  <input required value={formData.prodi} onChange={(e) => setFormData({...formData, prodi: e.target.value})} className="w-full border-b border-gray-200 py-1.5 outline-none focus:border-orange-500 font-medium" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-gray-400 uppercase">Kelas</label>
+                  {/* FREE TEXT INPUT */}
                   <input required value={formData.kelas} onChange={(e) => setFormData({...formData, kelas: e.target.value})} className="w-full border-b border-gray-200 py-1.5 outline-none focus:border-orange-500 font-medium" />
                 </div>
               </div>
