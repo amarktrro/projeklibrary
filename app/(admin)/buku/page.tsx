@@ -1,23 +1,22 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import axios from "axios"; // Added axios
+import axios from "axios";
 import { 
   FaPlus, FaSearch, FaEdit, FaTrash, FaBook, 
   FaList, FaTimes, FaSave
 } from "react-icons/fa";
 
-// Updated Interface to match Database + UI
 interface Book {
-  id_db?: number;    // Primary Key for Laravel
-  id: string;        // This is 'kode_buku' in DB
-  title: string;     // This is 'judul' in DB
-  author: string;    // This is 'penulis' in DB
-  category: string;  // This is 'kategori' in DB
-  publisher: string; // This is 'penerbit' in DB
-  year: string | number; // This is 'tahun_terbit' in DB
+  id_db?: number;
+  id: string;        
+  title: string;
+  author: string;    
+  category: string;
+  publisher: string; 
+  year: string | number;
   stock: number;
-  available: number; // This is 'tersedia' in DB
+  available: number;
 }
 
 const categoryPrefixes: Record<string, string> = {
@@ -34,20 +33,20 @@ export default function BukuPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("Semua Kategori");
   const [manualCategory, setManualCategory] = useState("");
+  const [error, setError] = useState<string | null>(null);
   
   const API_URL = "http://127.0.0.1:8000/api/buku";
-
   const [currentBook, setCurrentBook] = useState<Partial<Book>>({
     id: "", title: "", author: "", category: "", 
     publisher: "", year: 2024, stock: 0, available: 0
   });
 
-  // --- FETCH DATA FROM BACKEND ---
   const fetchBooks = async () => {
+    setError(null);
     try {
       const response = await axios.get(API_URL);
-      // Map Laravel data (Indonesian) to Frontend (English interface)
-      const mappedData = response.data.map((b: any) => ({
+      const data = Array.isArray(response.data) ? response.data : response.data.data || [];
+      const mappedData = data.map((b: any) => ({
         id_db: b.id,
         id: b.kode_buku,
         title: b.judul,
@@ -59,8 +58,10 @@ export default function BukuPage() {
         available: b.tersedia
       }));
       setBooks(mappedData);
-    } catch (error) {
-      console.error("Error fetching books:", error);
+    } catch (err: any) {
+      const errMsg = err.response?.data?.message || err.message || "Unknown Connection Error";
+      console.error("Error fetching books:", errMsg);
+      setError("Gagal mengambil data dari server. Periksa koneksi Laravel.");
     }
   };
 
@@ -87,14 +88,9 @@ export default function BukuPage() {
     setCurrentBook({ ...currentBook, category: cat, id: generatedId });
   };
 
-  // --- ADD & EDIT LOGIC ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const finalCategory = currentBook.category === "Lainnya (Input Manual)" 
-      ? manualCategory 
-      : currentBook.category;
-
-    // Map Frontend to Laravel expectations
+    const finalCategory = currentBook.category === "Lainnya (Input Manual)" ? manualCategory : currentBook.category;
     const payload = {
       kode_buku: currentBook.id,
       judul: currentBook.title,
@@ -105,31 +101,27 @@ export default function BukuPage() {
       stok: Number(currentBook.stock),
       tersedia: Number(currentBook.available)
     };
-
     try {
       if (currentBook.id_db) {
-        // UPDATE
         await axios.put(`${API_URL}/${currentBook.id_db}`, payload);
       } else {
-        // CREATE
         await axios.post(API_URL, payload);
       }
-      fetchBooks(); // Refresh table
+      fetchBooks();
       closeModal();
-    } catch (error) {
-      alert("Gagal menyimpan data ke server.");
+    } catch (err: any) {
+      alert("Gagal menyimpan data: " + (err.response?.data?.message || "Server Error"));
     }
   };
 
-  // --- DELETE LOGIC ---
   const handleDelete = async (db_id: number | undefined) => {
     if (!db_id) return;
     if (confirm("Hapus buku ini dari database?")) {
       try {
         await axios.delete(`${API_URL}/${db_id}`);
         fetchBooks();
-      } catch (error) {
-        alert("Gagal menghapus data.");
+      } catch (err: any) {
+        alert("Gagal menghapus: " + (err.response?.data?.message || "Server Error"));
       }
     }
   };
@@ -163,7 +155,6 @@ export default function BukuPage() {
 
   return (
     <div className="p-8 bg-[#f4f7fe] min-h-screen font-sans text-slate-800">
-      {/* UI Remains Exactly the Same */}
       <div className="flex justify-between items-center mb-8">
         <div className="flex items-center gap-3">
           <div className="text-[#1e3a8a] text-3xl"><FaBook /></div>
@@ -173,6 +164,12 @@ export default function BukuPage() {
           <FaPlus /> Tambah Buku Baru
         </button>
       </div>
+
+      {error && (
+        <div className="mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
+          {error}
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
         <div className="bg-[#1e293b] p-5 flex items-center gap-3 text-white">

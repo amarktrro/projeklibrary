@@ -93,8 +93,9 @@ export default function DashboardPage() {
 
           {/* --- STATS CARDS --- */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {/* CARD: SEDANG DIPINJAM - UPDATED LOGO STYLE */}
             <div className="bg-white p-6 rounded-xl shadow-sm flex items-center gap-5 border border-gray-200 transition-transform hover:-translate-y-1 duration-300">
-              <div className="bg-blue-100 p-4 rounded-lg text-blue-600 text-2xl shadow-lg">
+              <div className="bg-[#1e293b] p-4 rounded-xl text-white text-2xl shadow-lg">
                 <FaBook />
               </div>
               <div>

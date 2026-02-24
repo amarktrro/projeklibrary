@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios'; // Import axios
+import axios from 'axios';
 import Fuse from 'fuse.js';
 import Navbar from '../../../components/navbar';
 import Sidebar from '../../../components/sidebar';
@@ -19,27 +19,41 @@ export default function CariBukuPage() {
   const [borrowDate, setBorrowDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [notification, setNotification] = useState<{ show: boolean; bookCode: string; borrowDate: string }>({ show: false, bookCode: '', borrowDate: '' });
   const [notificationFading, setNotificationFading] = useState(false);
+  
+  // State untuk error handling
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const API_URL = "http://127.0.0.1:8000/api/buku";
 
-  // --- FETCH FROM BACKEND INSTEAD OF LOCALSTORAGE ---
+  // --- FETCH DATA DENGAN PESAN ERROR BARU ---
   const fetchBooks = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const response = await axios.get(API_URL);
-      const mappedData = response.data.map((b: any) => ({
-        id_db: b.id,         // Hidden DB Primary Key
-        id: b.kode_buku,     // Maps to your 'Kode' display
+      // Mendukung response array langsung atau di dalam object 'data'
+      const rawData = Array.isArray(response.data) ? response.data : response.data.data || [];
+      
+      const mappedData = rawData.map((b: any) => ({
+        id_db: b.id,         // Primary Key DB
+        id: b.kode_buku,     // Tampilan 'Kode'
         title: b.judul,
         author: b.penulis,
         category: b.kategori,
         publisher: b.penerbit,
         year: b.tahun_terbit,
         stock: b.stok,
-        available: b.tersedia // Maps to 'Tersedia' display
+        available: b.tersedia // Tampilan 'Tersedia'
       }));
       setBooks(mappedData);
-    } catch (error) {
-      console.error("Error fetching books:", error);
+    } catch (err: any) {
+      console.error("Error fetching books:", err);
+      // PERUBAHAN TEKS ERROR DISINI
+      setError("Gagal mengambil data buku, coba menghubungi admin.");
+      setBooks([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -69,11 +83,9 @@ export default function CariBukuPage() {
     if (!selectedBook) return;
 
     try {
-      // Logic: Decrease available count in Backend
       const updatedAvailable = Math.max(0, (selectedBook.available || 0) - 1);
       
       await axios.put(`${API_URL}/${selectedBook.id_db}`, {
-        // We must send all required fields to Laravel update
         kode_buku: selectedBook.id,
         judul: selectedBook.title,
         penulis: selectedBook.author,
@@ -84,10 +96,8 @@ export default function CariBukuPage() {
         tersedia: updatedAvailable 
       });
 
-      // Refresh the list to show new 'Tersedia' count
       fetchBooks();
       
-      // Keep your existing notification and history logic
       const borrowedBooksData = JSON.parse(localStorage.getItem('borrowed_books') || '{"active": [], "history": []}');
       const newBorrow = {
         title: selectedBook.title,
@@ -113,7 +123,7 @@ export default function CariBukuPage() {
       setIsModalOpen(false);
       setSelectedBook(null);
     } catch (error) {
-      alert("Gagal memproses peminjaman.");
+      alert("Gagal memproses peminjaman. Silakan cek koneksi ke server.");
     }
   };
 
@@ -186,37 +196,50 @@ export default function CariBukuPage() {
             </select>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredBooks.map((book) => (
-              <div key={book.id_db} className="bg-white rounded-2xl border border-gray-200 shadow-sm transform transition duration-200 hover:-translate-y-1 hover:shadow-lg overflow-hidden flex flex-col">
-                <div className="bg-[#c1d095] h-48 flex items-center justify-center m-4 rounded-xl">
-                  <FaBook className="text-6xl text-[#172e5f]" />
-                </div>
-                <div className="px-6 pb-6 flex-1 flex flex-col">
-                  <h3 className="font-bold text-gray-800 text-lg mb-3 line-clamp-2">{book.title}</h3>
-                  <div className="space-y-2 mb-4 text-sm text-gray-600">
-                    <div className="flex items-center gap-2"><FaUser className="text-xs text-gray-500" /> {book.author}</div>
-                    <div className="flex items-center gap-2"><FaTag className="text-xs text-gray-500" /> {book.category || 'Umum'}</div>
-                    <div className="flex items-center gap-2"><FaBookmark className="text-xs text-gray-500" /> Kode: {book.id}</div>
+          {/* MENAMPILKAN PESAN ERROR DI UI */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200 text-center font-medium">
+              {error}
+            </div>
+          )}
+
+          {loading && !error ? (
+             <div className="flex justify-center items-center py-20">
+                <p className="text-gray-500 animate-pulse">Memuat data buku...</p>
+             </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredBooks.map((book) => (
+                <div key={book.id_db} className="bg-white rounded-2xl border border-gray-200 shadow-sm transform transition duration-200 hover:-translate-y-1 hover:shadow-lg overflow-hidden flex flex-col">
+                  <div className="bg-[#c1d095] h-48 flex items-center justify-center m-4 rounded-xl">
+                    <FaBook className="text-6xl text-[#172e5f]" />
                   </div>
-                  <div className="mb-4">
-                    <span className={`${book.available > 0 ? 'bg-green-600' : 'bg-red-600'} text-white text-xs px-3 py-1 rounded-full font-bold`}>
-                      {book.available > 0 ? `Tersedia: ${book.available}` : 'Stok Habis'}
-                    </span>
+                  <div className="px-6 pb-6 flex-1 flex flex-col">
+                    <h3 className="font-bold text-gray-800 text-lg mb-3 line-clamp-2">{book.title}</h3>
+                    <div className="space-y-2 mb-4 text-sm text-gray-600">
+                      <div className="flex items-center gap-2"><FaUser className="text-xs text-gray-500" /> {book.author}</div>
+                      <div className="flex items-center gap-2"><FaTag className="text-xs text-gray-500" /> {book.category || 'Umum'}</div>
+                      <div className="flex items-center gap-2"><FaBookmark className="text-xs text-gray-500" /> Kode: {book.id}</div>
+                    </div>
+                    <div className="mb-4">
+                      <span className={`${book.available > 0 ? 'bg-green-600' : 'bg-red-600'} text-white text-xs px-3 py-1 rounded-full font-bold`}>
+                        {book.available > 0 ? `Tersedia: ${book.available}` : 'Stok Habis'}
+                      </span>
+                    </div>
+                    {book.available > 0 ? (
+                      <button onClick={() => openBorrowModal(book)} className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold transition-colors mt-auto">
+                        <FaHandHolding /> Pinjam Buku
+                      </button>
+                    ) : (
+                      <button disabled className="w-full bg-gray-600 text-white py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold cursor-not-allowed mt-auto">
+                        <FaBan /> Tidak Tersedia
+                      </button>
+                    )}
                   </div>
-                  {book.available > 0 ? (
-                    <button onClick={() => openBorrowModal(book)} className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold transition-colors mt-auto">
-                      <FaHandHolding /> Pinjam Buku
-                    </button>
-                  ) : (
-                    <button disabled className="w-full bg-gray-600 text-white py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold cursor-not-allowed mt-auto">
-                      <FaBan /> Tidak Tersedia
-                    </button>
-                  )}
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {isModalOpen && selectedBook && (
             <div className="fixed inset-0 z-50 flex items-center justify-center">

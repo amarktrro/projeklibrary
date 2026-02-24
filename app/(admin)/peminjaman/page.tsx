@@ -23,7 +23,6 @@ export default function AdminPeminjaman() {
     const storedData = localStorage.getItem('borrowed_books');
     if (storedData) {
       const parsed = JSON.parse(storedData);
-      // Ensure activeBorrows has the necessary fields, fill with '-' if missing
       const cleanedActive = (parsed.active || []).map((item: any) => ({
         ...item,
         book_id: item.book_id || '-',
@@ -147,16 +146,20 @@ export default function AdminPeminjaman() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+          {/* SEDANG DIPINJAM - DARK NAVY */}
           <div className="bg-white p-7 rounded-3xl shadow-sm border border-gray-200 flex items-center gap-6">
-            <div className="bg-blue-50 p-5 rounded-2xl text-blue-600 shadow-sm"><FaBook size={30} /></div>
+            <div className="bg-[#1e293b] p-5 rounded-2xl text-white shadow-lg">
+              <FaBook size={30} />
+            </div>
             <div>
               <p className="text-4xl font-black text-gray-800">{activeBorrows.length}</p>
               <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Sedang Dipinjam</p>
             </div>
           </div>
 
+          {/* TERLAMBAT - DARK RED */}
           <div className="bg-white p-7 rounded-3xl shadow-sm border border-gray-200 flex items-center gap-6">
-            <div className="bg-red-50 p-5 rounded-2xl text-red-600 shadow-sm">
+            <div className="bg-red-700 p-5 rounded-2xl text-white shadow-lg">
               <FaExclamationTriangle size={30} />
             </div>
             <div>
@@ -167,8 +170,11 @@ export default function AdminPeminjaman() {
             </div>
           </div>
 
+          {/* TOTAL SELESAI - DARK GREEN */}
           <div className="bg-white p-7 rounded-3xl shadow-sm border border-gray-200 flex items-center gap-6">
-            <div className="bg-green-50 p-5 rounded-2xl text-green-600 shadow-sm"><FaCheckCircle size={30} /></div>
+            <div className="bg-green-700 p-5 rounded-2xl text-white shadow-lg">
+              <FaCheckCircle size={30} />
+            </div>
             <div>
               <p className="text-4xl font-black text-gray-800">{borrowHistory.length}</p>
               <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Total Selesai</p>
@@ -176,9 +182,8 @@ export default function AdminPeminjaman() {
           </div>
         </div>
 
-        {/* --- TABLE 1: DAFTAR PEMINJAMAN AKTIF (REDESIGNED) --- */}
+        {/* --- TABLE 1: DAFTAR PEMINJAMAN AKTIF --- */}
         <div className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden mb-12">
-          {/* Table Controls */}
           <div className="p-6 bg-white border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="relative flex-1 md:max-w-md">
               <input
@@ -224,30 +229,14 @@ export default function AdminPeminjaman() {
                     const isLate = status === "Terlambat";
                     return (
                       <tr key={index} className="bg-white hover:bg-gray-50 transition-colors">
-                        <td className="py-5 px-4 text-sm font-bold text-gray-700">
-                          {item.book_id}
-                        </td>
-                        <td className="py-5 px-4 text-sm font-medium text-gray-600">
-                          {item.nim || item.user_id}
-                        </td>
-                        <td className="py-5 px-4 text-sm font-bold text-gray-800">
-                          {item.name || item.user_name}
-                        </td>
-                        <td className="py-5 px-4 text-sm text-gray-700">
-                          {item.title || item.book_title || item.judul_buku}
-                        </td>
-                        <td className="py-5 px-4 text-sm text-gray-600 text-center">
-                          {item.kelas}
-                        </td>
-                        <td className="py-5 px-4 text-sm text-gray-600">
-                          {item.borrow_date || item.tgl_pinjam}
-                        </td>
-                        <td className="py-5 px-4 text-sm font-bold text-gray-700">
-                          {item.due_date || item.jatuh_tempo}
-                        </td>
-                        <td className="py-5 px-4 text-sm text-gray-600">
-                          {item.no_hp}
-                        </td>
+                        <td className="py-5 px-4 text-sm font-bold text-gray-700">{item.book_id}</td>
+                        <td className="py-5 px-4 text-sm font-medium text-gray-600">{item.nim || item.user_id}</td>
+                        <td className="py-5 px-4 text-sm font-bold text-gray-800">{item.name || item.user_name}</td>
+                        <td className="py-5 px-4 text-sm text-gray-700">{item.title || item.book_title || item.judul_buku}</td>
+                        <td className="py-5 px-4 text-sm text-gray-600 text-center">{item.kelas}</td>
+                        <td className="py-5 px-4 text-sm text-gray-600">{item.borrow_date || item.tgl_pinjam}</td>
+                        <td className="py-5 px-4 text-sm font-bold text-gray-700">{item.due_date || item.jatuh_tempo}</td>
+                        <td className="py-5 px-4 text-sm text-gray-600">{item.no_hp}</td>
                         <td className="py-5 px-4 text-center">
                           <span className={`inline-block px-4 py-1.5 rounded-full text-xs font-bold text-white ${isLate ? 'bg-[#dc3545]' : 'bg-[#198754]'}`}>
                             {status}
@@ -255,10 +244,7 @@ export default function AdminPeminjaman() {
                         </td>
                         <td className="py-5 px-4 text-center">
                           <button
-                            onClick={() => {
-                              setSelectedIndex(index);
-                              setIsModalOpen(true);
-                            }}
+                            onClick={() => { setSelectedIndex(index); setIsModalOpen(true); }}
                             className="bg-[#198754] hover:bg-[#157347] text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 mx-auto shadow-sm active:scale-95 transition-all"
                           >
                             <FaUndo /> Dikembalikan
@@ -279,7 +265,7 @@ export default function AdminPeminjaman() {
           </div>
         </div>
 
-        {/* --- TABLE 2: RIWAYAT PENGEMBALIAN TERBARU (Kept for context, style can be matched later) --- */}
+        {/* --- TABLE 2: RIWAYAT PENGEMBALIAN TERBARU --- */}
         <div className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
           <div className="bg-[#172e5f] p-6 border-b-4 border-orange-500">
             <h3 className="text-white font-bold flex items-center gap-3 tracking-wider text-base">
@@ -302,21 +288,11 @@ export default function AdminPeminjaman() {
                 {borrowHistory.length > 0 ? (
                   borrowHistory.map((item, index) => (
                     <tr key={index} className="bg-white hover:bg-gray-50 transition-colors">
-                      <td className="py-4 px-4 text-[13px] font-medium text-gray-600">
-                        {item.tgl_kembali || item.return_date}
-                      </td>
-                      <td className="py-4 px-4 text-[13px] font-medium text-gray-500">
-                        {item.nim || item.user_id || "N/A"}
-                      </td>
-                      <td className="py-4 px-4 text-[13px] font-bold text-gray-800">
-                        {item.name || item.user_name || "Anggota"}
-                      </td>
-                      <td className="py-4 px-4 text-[13px] italic text-blue-900 font-medium">
-                        {item.title || item.book_title || item.judul_buku}
-                      </td>
-                      <td className="py-4 px-4 text-center text-[13px] font-bold text-gray-700">
-                        {item.denda_display || "-"}
-                      </td>
+                      <td className="py-4 px-4 text-[13px] font-medium text-gray-600">{item.tgl_kembali || item.return_date}</td>
+                      <td className="py-4 px-4 text-[13px] font-medium text-gray-500">{item.nim || item.user_id || "N/A"}</td>
+                      <td className="py-4 px-4 text-[13px] font-bold text-gray-800">{item.name || item.user_name || "Anggota"}</td>
+                      <td className="py-4 px-4 text-[13px] italic text-blue-900 font-medium">{item.title || item.book_title || item.judul_buku}</td>
+                      <td className="py-4 px-4 text-center text-[13px] font-bold text-gray-700">{item.denda_display || "-"}</td>
                       <td className="py-4 px-4 text-center">
                         <span className={`${item.is_late_return ? 'bg-[#fbbf24] text-gray-900' : 'bg-[#198754] text-white'} px-4 py-1.5 rounded-full text-[11px] font-bold`}>
                           {item.history_status || "Tepat Waktu"}
@@ -335,7 +311,6 @@ export default function AdminPeminjaman() {
             </table>
           </div>
         </div>
-
       </div>
 
       {/* Confirmation Modal */}
@@ -355,12 +330,8 @@ export default function AdminPeminjaman() {
                 <br /> oleh <b className="text-gray-800">{activeBorrows[selectedIndex!]?.name || activeBorrows[selectedIndex!]?.user_name}</b>?
               </p>
               <div className="flex gap-4">
-                <button onClick={() => setIsModalOpen(false)} className="flex-1 py-3.5 text-xs font-black uppercase text-gray-500 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors">
-                  Batal
-                </button>
-                <button onClick={handleReturnConfirm} className="flex-1 py-3.5 text-xs font-black uppercase text-white bg-[#198754] rounded-xl shadow-lg hover:bg-[#157347] transition-all">
-                  Ya, Kembalikan
-                </button>
+                <button onClick={() => setIsModalOpen(false)} className="flex-1 py-3.5 text-xs font-black uppercase text-gray-500 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors">Batal</button>
+                <button onClick={handleReturnConfirm} className="flex-1 py-3.5 text-xs font-black uppercase text-white bg-[#198754] rounded-xl shadow-lg hover:bg-[#157347] transition-all">Ya, Kembalikan</button>
               </div>
             </div>
           </div>

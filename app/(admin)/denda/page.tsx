@@ -1,244 +1,251 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
-import {
-  FaMoneyBillWave, FaSearch, FaCheckCircle,
-  FaExclamationTriangle, FaSync, FaHistory,
-  FaFilter, FaChevronDown, FaReceipt
+
+import React, { useState } from "react";
+import { 
+  FaMoneyBillWave, 
+  FaExclamationTriangle, 
+  FaMoneyBill, 
+  FaCheckCircle, 
+  FaList, 
+  FaCheck, 
+  FaBell, 
+  FaTimes,
+  FaCog,
+  FaCalculator
 } from "react-icons/fa";
 
-export default function KelolaDenda() {
-  const [finesData, setFinesData] = useState<any[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("Semua Status");
+export default function DendaPage() {
+  const [filterStatus, setFilterStatus] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedFineIndex, setSelectedFineIndex] = useState<number | null>(null);
+  const [selectedDenda, setSelectedDenda] = useState<any>(null);
 
-  const loadFines = useCallback(() => {
-    const storedData = localStorage.getItem('borrowed_books');
-    if (storedData) {
-      const parsed = JSON.parse(storedData);
-      // Fines typically come from history entries where denda != "-"
-      const history = parsed.history || [];
-      const finesOnly = history.filter((item: any) => item.denda_display && item.denda_display !== "-");
-      setFinesData(finesOnly);
-    }
-  }, []);
+  const [dendaData, setDendaData] = useState([
+    { id: 1, nim: "2021001", nama: "Ahmad Fajar", buku: "Pemrograman Web", pinjam: "05/01/2025", tempo: "10/01/2025", late: "3 hari", denda: 3000, status: "Belum Lunas" },
+    { id: 2, nim: "2021002", nama: "Siti Nurhaliza", buku: "Basis Data", pinjam: "07/01/2025", tempo: "12/01/2025", late: "1 hari", denda: 1000, status: "Belum Lunas" },
+    { id: 3, nim: "2021003", nama: "Budi Santoso", buku: "Algoritma", pinjam: "02/01/2025", tempo: "07/01/2025", late: "6 hari", denda: 6000, status: "Lunas" },
+    { id: 4, nim: "2021004", nama: "Dewi Anggraini", buku: "Jaringan Komputer", pinjam: "08/01/2025", tempo: "13/01/2025", late: "2 hari", denda: 2000, status: "Belum Lunas" },
+  ]);
 
-  useEffect(() => {
-    loadFines();
-    window.addEventListener("storage", loadFines);
-    return () => window.removeEventListener("storage", loadFines);
-  }, [loadFines]);
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(amount);
 
-  const handlePaymentConfirm = () => {
-    if (selectedFineIndex === null) return;
-    
-    const storedData = localStorage.getItem('borrowed_books');
-    if (storedData) {
-      const parsed = JSON.parse(storedData);
-      const targetItem = finesData[selectedFineIndex];
-      
-      // Update the status in the main history storage
-      const updatedHistory = parsed.history.map((item: any) => {
-        if (item.id === targetItem.id || (item.name === targetItem.name && item.tgl_kembali === targetItem.tgl_kembali)) {
-          return { ...item, payment_status: "LUNAS" };
-        }
-        return item;
-      });
+  const handlePayClick = (item: any) => {
+    setSelectedDenda(item);
+    setIsModalOpen(true);
+  };
 
-      localStorage.setItem('borrowed_books', JSON.stringify({
-        ...parsed,
-        history: updatedHistory
-      }));
-      
-      loadFines();
+  const handleConfirmPayment = () => {
+    if (selectedDenda) {
+      setDendaData(prevData =>
+        prevData.map(item =>
+          item.id === selectedDenda.id ? { ...item, status: "Lunas" } : item
+        )
+      );
       setIsModalOpen(false);
-      setSelectedFineIndex(null);
+      setSelectedDenda(null);
     }
   };
 
-  const filteredFines = finesData.filter(item => {
-    const name = (item.name || item.user_name || "").toLowerCase();
-    const title = (item.title || item.book_title || "").toLowerCase();
-    const status = item.payment_status || "BELUM BAYAR";
-    
-    const matchesSearch = name.includes(searchTerm.toLowerCase()) || title.includes(searchTerm.toLowerCase());
-    const matchesFilter = statusFilter === "Semua Status" || status === statusFilter;
-    
-    return matchesSearch && matchesFilter;
-  });
-
-  const totalDenda = finesData.reduce((acc, curr) => {
-    if (curr.payment_status === "LUNAS") return acc;
-    const val = parseInt(curr.denda_display.replace(/[^0-9]/g, "")) || 0;
-    return acc + val;
-  }, 0);
-
   return (
-    <div className="p-4 md:p-8 bg-[#f0f2f5] min-h-screen">
-      <div className="w-full mx-auto">
+    <div className="p-6 md:p-8 bg-[#f4f6f9] min-h-screen text-[#333] w-full font-sans font-normal">
+      
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 px-1">
+        <div>
+          <h1 className="text-2xl font-normal text-[#1a2942] flex items-center gap-3 m-0">
+            <FaMoneyBillWave /> Kelola Denda
+          </h1>
+          <p className="text-sm text-gray-500 mt-1 font-normal">Manajemen denda keterlambatan pengembalian buku</p>
+        </div>
+      </div>
 
-        {/* Header Cards Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-            <div className="bg-[#172e5f] p-4 rounded-xl text-white shadow-lg">
-              <FaMoneyBillWave size={24} />
-            </div>
-            <div>
-                <p className="text-[10px] text-gray-400 font-black uppercase">Total Denda Tertunda</p>
-                <h3 className="text-[#172e5f] font-bold text-lg leading-tight">Rp {totalDenda.toLocaleString('id-ID')}</h3>
-            </div>
+      {/* Stats Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white rounded-[8px] shadow-sm border border-gray-200 p-6 flex items-center gap-5">
+          <div className="w-14 h-14 rounded-[8px] flex items-center justify-center text-white text-xl bg-[#dc3545]">
+            <FaExclamationTriangle />
           </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-            <div className="bg-red-50 p-4 rounded-xl text-red-600">
-              <FaExclamationTriangle size={24} />
-            </div>
-            <div>
-                <p className="text-[10px] text-gray-400 font-black uppercase">Belum Lunas</p>
-                <h3 className="text-[#172e5f] font-bold text-lg leading-tight">{finesData.filter(f => f.payment_status !== "LUNAS").length} Transaksi</h3>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-            <div className="bg-green-50 p-4 rounded-xl text-green-600">
-              <FaCheckCircle size={24} />
-            </div>
-            <div>
-                <p className="text-[10px] text-gray-400 font-black uppercase">Berhasil Dibayar</p>
-                <h3 className="text-[#172e5f] font-bold text-lg leading-tight">{finesData.filter(f => f.payment_status === "LUNAS").length} Selesai</h3>
-            </div>
+          <div>
+            <h3 className="text-2xl font-normal text-[#1a2942] m-0">12</h3>
+            <p className="text-gray-500 text-[11px] font-normal uppercase m-0">Total Denda Aktif</p>
           </div>
         </div>
-
-        {/* --- MAIN TABLE SECTION --- */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-          
-          {/* Navy Blue Header Block */}
-          <div className="bg-[#172e5f] p-6">
-            <div className="flex items-center gap-2 text-white font-bold mb-6 text-sm">
-              <FaFilter className="text-white/60" size={12}/>
-              <span className="uppercase tracking-wider">Kelola Pembayaran Denda</span>
-              <div className="ml-auto flex items-center gap-1 font-normal text-gray-400 cursor-pointer">
-                Filter <FaChevronDown size={10} />
-              </div>
-            </div>
-
-            <div className="flex flex-col md:flex-row gap-4 items-center">
-              <div className="flex items-center gap-3 text-white font-bold">
-                <div className="bg-white/10 p-2 rounded-lg">
-                  <FaReceipt size={20} />
-                </div>
-                <span className="text-xl whitespace-nowrap">Daftar Denda</span>
-              </div>
-
-              <div className="relative flex-grow max-w-2xl">
-                <FaSearch className="absolute left-4 top-4 text-gray-400" size={16} />
-                <input
-                  type="text"
-                  placeholder="Cari Nama Peminjam..."
-                  className="w-full bg-[#253966] border-none rounded-xl px-4 py-3.5 pl-12 text-white text-sm focus:ring-2 focus:ring-orange-500 transition-all placeholder:text-gray-400"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-
-              <select 
-                className="bg-white text-[#172e5f] px-6 py-3.5 rounded-xl text-sm font-black min-w-[180px] focus:outline-none"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="Semua Status">Semua Status</option>
-                <option value="BELUM BAYAR">Belum Bayar</option>
-                <option value="LUNAS">Lunas</option>
-              </select>
-            </div>
+        <div className="bg-white rounded-[8px] shadow-sm border border-gray-200 p-6 flex items-center gap-5">
+          <div className="w-14 h-14 rounded-[8px] flex items-center justify-center text-white text-xl bg-[#f39c12]">
+            <FaMoneyBill />
           </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse table-auto">
-              <thead>
-                <tr className="border-b-4 border-orange-500 text-gray-800 text-[13px] font-black uppercase tracking-tight bg-white">
-                  <th className="py-5 px-6 whitespace-nowrap">Tgl Kembali</th>
-                  <th className="py-5 px-6 whitespace-nowrap">Nama Peminjam</th>
-                  <th className="py-5 px-6 w-full">Buku Terlambat</th>
-                  <th className="py-5 px-6 whitespace-nowrap text-center">Jumlah Denda</th>
-                  <th className="py-5 px-6 text-center">Status</th>
-                  <th className="py-5 px-6 text-center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredFines.length > 0 ? (
-                  filteredFines.map((item, index) => {
-                    const isPaid = item.payment_status === "LUNAS";
-                    return (
-                      <tr key={index} className="bg-white hover:bg-gray-50 transition-colors">
-                        <td className="py-5 px-6 text-sm font-medium text-gray-500 whitespace-nowrap">
-                          {item.tgl_kembali}
-                        </td>
-                        <td className="py-5 px-6 text-sm font-black text-[#172e5f] whitespace-nowrap">
-                          {item.name || item.user_name}
-                        </td>
-                        <td className="py-5 px-6 text-sm text-blue-900 italic font-semibold">
-                          {item.title || item.book_title}
-                        </td>
-                        <td className="py-5 px-6 text-center text-sm font-black text-red-600 whitespace-nowrap">
-                          {item.denda_display}
-                        </td>
-                        <td className="py-5 px-6 text-center">
-                          <span className={`inline-flex items-center justify-center min-w-[110px] px-4 py-2 rounded-lg text-[10px] font-black text-white uppercase tracking-wider ${isPaid ? 'bg-[#2e7d32]' : 'bg-[#d32f2f]'}`}>
-                            {isPaid ? 'LUNAS' : 'BELUM BAYAR'}
-                          </span>
-                        </td>
-                        <td className="py-5 px-6 text-center">
-                          {!isPaid ? (
-                            <button
-                              onClick={() => {
-                                setSelectedFineIndex(index);
-                                setIsModalOpen(true);
-                              }}
-                              className="bg-[#1b5e20] hover:bg-[#113d15] text-white px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mx-auto shadow-md transition-all active:scale-95"
-                            >
-                              <FaReceipt size={12} /> BAYAR SEKARANG
-                            </button>
-                          ) : (
-                            <span className="text-gray-400 text-[10px] font-bold uppercase italic">Selesai</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="px-8 py-20 text-center text-gray-400 font-bold uppercase text-sm tracking-widest italic">
-                      Tidak ada data denda ditemukan.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+          <div>
+            <h3 className="text-2xl font-normal text-[#1a2942] m-0">Rp 45.000</h3>
+            <p className="text-gray-500 text-[11px] font-normal uppercase m-0">Total Belum Lunas</p>
+          </div>
+        </div>
+        <div className="bg-white rounded-[8px] shadow-sm border border-gray-200 p-6 flex items-center gap-5">
+          <div className="w-14 h-14 rounded-[8px] flex items-center justify-center text-white text-xl bg-[#28a745]">
+            <FaCheckCircle />
+          </div>
+          <div>
+            <h3 className="text-2xl font-normal text-[#1a2942] m-0">Rp 120.000</h3>
+            <p className="text-gray-500 text-[11px] font-normal uppercase m-0">Lunas Bulan Ini</p>
           </div>
         </div>
       </div>
 
-      {/* Payment Confirmation Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-[#172e5f]/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl">
-            <div className="bg-[#1b5e20] p-8 text-center text-white">
-              <FaReceipt size={40} className="mx-auto mb-4 opacity-50" />
-              <h3 className="text-2xl font-black uppercase tracking-tight">Konfirmasi Pembayaran</h3>
+      {/* Main Table Content */}
+      <div className="bg-white rounded-[8px] shadow-sm border border-gray-200 mb-8 overflow-hidden w-full font-normal">
+        <div className="bg-[#1a2942] text-white px-6 py-4 flex justify-between items-center border-b-[3px] border-[#e67e22]">
+          <h3 className="text-sm font-normal m-0 flex items-center gap-3 tracking-wider">
+            <FaList /> DAFTAR DENDA MAHASISWA
+          </h3>
+          <select 
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-3 py-1.5 rounded-[8px] border border-gray-400 text-gray-700 bg-white outline-none text-xs font-normal"
+          >
+            <option value="all">Semua Status</option>
+            <option value="belum lunas">Belum Lunas</option>
+            <option value="lunas">Lunas</option>
+          </select>
+        </div>
+        
+        <div className="overflow-x-auto p-2 font-normal">
+          <table className="w-full text-left border-collapse min-w-[1100px]">
+            <thead>
+              <tr className="text-[#212529] font-normal text-[11px] uppercase bg-gray-50 border-b border-gray-200">
+                <th className="p-4 font-normal">No</th>
+                <th className="p-4 font-normal">NIM</th>
+                <th className="p-4 font-normal">Nama Mahasiswa</th>
+                <th className="p-4 font-normal">Judul Buku</th>
+                <th className="p-4 font-normal">Pinjam</th>
+                <th className="p-4 font-normal">Tempo</th>
+                <th className="p-4 font-normal text-center">Late</th>
+                <th className="p-4 font-normal">Denda</th>
+                <th className="p-4 font-normal text-center">Status</th>
+                <th className="p-4 font-normal">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="text-sm font-normal">
+              {dendaData.map((denda, index) => (
+                <tr key={denda.id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                  <td className="p-4 text-gray-400 font-normal">{index + 1}</td>
+                  <td className="p-4 font-mono text-[13px] text-gray-600 font-normal">{denda.nim}</td>
+                  <td className="p-4 font-normal text-gray-800">{denda.nama}</td>
+                  <td className="p-4 text-gray-600 font-normal">{denda.buku}</td>
+                  <td className="p-4 text-gray-500 text-xs font-normal">{denda.pinjam}</td>
+                  <td className="p-4 text-gray-500 text-xs font-normal">{denda.tempo}</td>
+                  <td className="p-4 text-center">
+                    {/* Padding p-1 (4px) untuk badge Late */}
+                    <span className="bg-[#dc3545] text-white p-1 rounded-[11px] text-[10px] font-normal whitespace-nowrap inline-block min-w-[60px]">
+                      {denda.late}
+                    </span>
+                  </td>
+                  <td className="p-4 font-normal text-[#1a2942]">{formatCurrency(denda.denda)}</td>
+                  <td className="p-4 text-center font-normal">
+                    {/* Padding p-1 (4px) untuk badge Status */}
+                    <span className={`${denda.status === "Belum Lunas" ? "bg-[#ffc107] text-black" : "bg-[#28a745] text-white"} p-1 rounded-[11px] text-[10px] font-normal uppercase whitespace-nowrap inline-block min-w-[80px]`}>
+                      {denda.status}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex justify-start items-center gap-2">
+                      {denda.status === "Belum Lunas" ? (
+                        <>
+                          <button 
+                            onClick={() => handlePayClick(denda)}
+                            className="bg-[#28a745] text-white px-3 py-1.5 rounded-[8px] text-xs font-normal flex items-center gap-1.5 hover:bg-[#218838] transition-all"
+                          >
+                            <FaCheck size={10} /> Bayar
+                          </button>
+                          <button className="bg-[#17a2b8] text-white p-2 rounded-[8px] hover:bg-[#138496] transition-all">
+                            <FaBell size={10} />
+                          </button>
+                        </>
+                      ) : (
+                        <button 
+                          disabled
+                          className="bg-[#6c757d] text-white px-3 py-1.5 rounded-[8px] text-xs font-normal flex items-center gap-1.5 opacity-80 cursor-default"
+                        >
+                          <FaCheck size={10} /> Lunas
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Footer Info & Tools */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-[8px] shadow-sm border border-gray-200 p-5 font-normal">
+          <h3 className="text-[11px] font-normal text-gray-400 mb-4 flex items-center gap-2 uppercase tracking-[2px]">
+            <FaCog /> KETENTUAN PERPUSTAKAAN
+          </h3>
+          <div className="bg-[#e7f3f5] text-[#0c5460] p-4 rounded-[8px] text-sm border border-[#bee5eb]">
+            <ul className="list-disc pl-5 space-y-1 font-normal">
+              <li>Maksimal pinjam: <span className="font-normal">5 hari kerja</span>.</li>
+              <li>Denda keterlambatan: <span className="font-normal">Rp 1.000 / hari</span>.</li>
+            </ul>
+          </div>
+        </div>
+        <div className="bg-white rounded-[8px] shadow-sm border border-gray-200 p-5 font-normal">
+          <h3 className="text-[11px] font-normal text-gray-400 mb-4 flex items-center gap-2 uppercase tracking-[2px]">
+            <FaCalculator /> SIMULASI HITUNG DENDA
+          </h3>
+          <div className="flex gap-3 items-end">
+            <div className="flex-1 font-normal">
+              <label className="text-[10px] block mb-1.5 font-normal text-gray-400 uppercase">Tgl Pinjam</label>
+              <input type="date" className="w-full border border-gray-200 p-2 rounded-[8px] text-xs outline-none focus:border-[#0d6efd] text-gray-600 font-normal" />
             </div>
-            <div className="p-8 text-center">
-              <p className="text-gray-600 mb-2 font-medium text-sm">Menerima pembayaran denda sebesar:</p>
-              <p className="text-3xl font-black text-red-600 mb-8">{filteredFines[selectedFineIndex!]?.denda_display}</p>
-              
-              <div className="flex gap-4">
-                <button onClick={() => setIsModalOpen(false)} className="flex-1 py-3.5 text-xs font-black uppercase text-gray-500 bg-gray-100 rounded-xl">Batal</button>
-                <button onClick={handlePaymentConfirm} className="flex-1 py-3.5 text-xs font-black uppercase text-white bg-[#1b5e20] rounded-xl shadow-lg">Konfirmasi Lunas</button>
+            <div className="flex-1 font-normal">
+              <label className="text-[10px] block mb-1.5 font-normal text-gray-400 uppercase">Tgl Kembali</label>
+              <input type="date" className="w-full border border-gray-200 p-2 rounded-[8px] text-xs outline-none focus:border-[#0d6efd] text-gray-600 font-normal" />
+            </div>
+            <button className="bg-[#0d6efd] text-white px-5 py-2 rounded-[8px] text-xs font-normal hover:bg-blue-600 transition-all uppercase shadow-sm">HITUNG</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Confirmation Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-[8px] shadow-2xl w-full max-w-md overflow-hidden mx-4 border border-gray-200">
+            <div className="bg-[#1a2942] text-white px-4 py-3 flex justify-between items-center border-b-[3px] border-[#e67e22]">
+              <h3 className="text-sm font-normal flex items-center gap-2 uppercase tracking-widest">
+                <FaMoneyBillWave /> Konfirmasi Bayar
+              </h3>
+              <button onClick={() => setIsModalOpen(false)} className="hover:text-gray-300">
+                <FaTimes />
+              </button>
+            </div>
+            <div className="p-8">
+              <p className="text-gray-600 mb-6 text-sm text-center font-normal">Pastikan Anda telah menerima uang tunai sebesar:</p>
+              <div className="bg-gray-50 rounded-[8px] p-5 border border-gray-200 space-y-3 mb-8">
+                <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                  <span className="text-gray-400 text-[10px] font-normal uppercase">Nama</span>
+                  <span className="text-gray-800 font-normal text-sm">{selectedDenda?.nama}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 text-[10px] font-normal uppercase">Total Tagihan</span>
+                  <span className="text-[#28a745] font-normal text-2xl">{formatCurrency(selectedDenda?.denda)}</span>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setIsModalOpen(false)} className="flex-1 border-2 py-2.5 rounded-[8px] text-xs font-normal uppercase text-gray-400 hover:bg-gray-50">Batal</button>
+                <button onClick={handleConfirmPayment} className="flex-1 bg-[#28a745] text-white font-normal py-2.5 rounded-[8px] text-xs uppercase flex items-center justify-center gap-2 shadow-md hover:bg-[#218838]">
+                  <FaCheck /> Konfirmasi
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
+      
     </div>
   );
 }
