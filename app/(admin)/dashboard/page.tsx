@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { 
   FaBook, 
   FaUsers, 
@@ -10,7 +11,8 @@ import {
   FaHistory,
   FaTachometerAlt,
   FaSyncAlt,
-  FaUserPlus
+  FaUserPlus,
+  
 } from "react-icons/fa";
 
 // --- NEW: Interface for Late Loan Data ---
@@ -32,6 +34,9 @@ interface DashboardStats {
 }
 
 export default function DashboardPage() {
+
+  const router = useRouter();
+
   const [stats, setStats] = useState<DashboardStats>({
     totalBooks: 0,
     totalUsers: 0,
@@ -53,6 +58,16 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
+
+    const adminToken = localStorage.getItem("admin_token");
+  const role = localStorage.getItem("role");
+
+  // LOOPHOLE FIX: If no token or not admin, redirect to login immediately
+  if (!adminToken || role !== 'admin') {
+    router.push('/admin-login');
+    return;
+  }
+
     const loadDashboardData = () => {
       setLoading(true);
       try {

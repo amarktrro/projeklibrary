@@ -20,36 +20,32 @@ export default function CariBukuPage() {
   const [notification, setNotification] = useState<{ show: boolean; bookCode: string; borrowDate: string }>({ show: false, bookCode: '', borrowDate: '' });
   const [notificationFading, setNotificationFading] = useState(false);
   
-  // State untuk error handling
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const API_URL = "http://127.0.0.1:8000/api/buku";
+  const PINJAM_URL = "http://127.0.0.1:8000/api/peminjaman";
 
-  // --- FETCH DATA DENGAN PESAN ERROR BARU ---
   const fetchBooks = async () => {
     setLoading(true);
     setError(null);
     try {
       const response = await axios.get(API_URL);
-      // Mendukung response array langsung atau di dalam object 'data'
       const rawData = Array.isArray(response.data) ? response.data : response.data.data || [];
       
       const mappedData = rawData.map((b: any) => ({
-        id_db: b.id,         // Primary Key DB
-        id: b.kode_buku,     // Tampilan 'Kode'
+        id_db: b.id,         
+        id: b.kode_buku,     
         title: b.judul,
         author: b.penulis,
         category: b.kategori,
         publisher: b.penerbit,
         year: b.tahun_terbit,
         stock: b.stok,
-        available: b.tersedia // Tampilan 'Tersedia'
+        available: b.tersedia 
       }));
       setBooks(mappedData);
     } catch (err: any) {
-      console.error("Error fetching books:", err);
-      // PERUBAHAN TEKS ERROR DISINI
       setError("Gagal mengambil data buku, coba menghubungi admin.");
       setBooks([]);
     } finally {
@@ -79,34 +75,34 @@ export default function CariBukuPage() {
     setIsModalOpen(true);
   };
 
+  // --- LOGIKA DIPERBAIKI: MENAMBAHKAN TOKEN AUTHORIZATION ---
   const handleConfirmBorrow = async () => {
     if (!selectedBook) return;
 
     try {
-      const updatedAvailable = Math.max(0, (selectedBook.available || 0) - 1);
-      
-      await axios.put(`${API_URL}/${selectedBook.id_db}`, {
-        kode_buku: selectedBook.id,
-        judul: selectedBook.title,
-        penulis: selectedBook.author,
-        kategori: selectedBook.category,
-        penerbit: selectedBook.publisher,
-        tahun_terbit: selectedBook.year,
-        stok: selectedBook.stock,
-        tersedia: updatedAvailable 
-      });
+      // 1. Ambil token dari localStorage
+      const token = localStorage.getItem('token'); 
 
+      if (!token) {
+        alert("Anda harus login terlebih dahulu!");
+        return;
+      }
+
+      // 2. Kirim data ke API dengan Header Authorization
+      await axios.post(PINJAM_URL, 
+        { buku_id: selectedBook.id_db },
+        { 
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          } 
+        }
+      );
+
+      // 3. Refresh data buku
       fetchBooks();
       
-      const borrowedBooksData = JSON.parse(localStorage.getItem('borrowed_books') || '{"active": [], "history": []}');
-      const newBorrow = {
-        title: selectedBook.title,
-        borrow_date: borrowDate,
-        due_date: new Date(new Date(borrowDate).getTime() + 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-      };
-      borrowedBooksData.active.push(newBorrow);
-      localStorage.setItem('borrowed_books', JSON.stringify(borrowedBooksData));
-      
+      // 4. Notifikasi Sukses
       setNotification({
         show: true,
         bookCode: selectedBook.id,
@@ -122,8 +118,13 @@ export default function CariBukuPage() {
       
       setIsModalOpen(false);
       setSelectedBook(null);
-    } catch (error) {
-      alert("Gagal memproses peminjaman. Silakan cek koneksi ke server.");
+    } catch (error: any) {
+      // Menangani error Unauthenticated (401)
+      if (error.response?.status === 401) {
+        alert("Sesi Anda telah berakhir atau Anda belum login. Silakan login kembali.");
+      } else {
+        alert(error.response?.data?.message || "Gagal memproses peminjaman.");
+      }
     }
   };
 
@@ -196,7 +197,6 @@ export default function CariBukuPage() {
             </select>
           </div>
 
-          {/* MENAMPILKAN PESAN ERROR DI UI */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200 text-center font-medium">
               {error}
@@ -204,9 +204,9 @@ export default function CariBukuPage() {
           )}
 
           {loading && !error ? (
-             <div className="flex justify-center items-center py-20">
+              <div className="flex justify-center items-center py-20">
                 <p className="text-gray-500 animate-pulse">Memuat data buku...</p>
-             </div>
+              </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredBooks.map((book) => (

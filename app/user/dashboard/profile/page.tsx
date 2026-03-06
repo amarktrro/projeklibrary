@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import Navbar from '../../../components/navbar';
 import Sidebar from '../../../components/sidebar';
+import { QRCodeSVG } from 'qrcode.react'; // New Import
 import { 
   FaUser, FaIdCard, FaGraduationCap, FaUsers, 
   FaEnvelope, FaPhone, FaQrcode, FaEdit, FaSave, FaTimes 
@@ -51,6 +52,11 @@ export default function UserProfilePage() {
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [loadingActivity, setLoadingActivity] = useState(false);
 
+  // Generate the string for the QR Code
+  const qrValue = userData 
+    ? `Nama: ${userData.name}\nNIM: ${userData.nim}\nKelas: ${userData.kelas}`
+    : '';
+
   if (typeof window !== 'undefined' && !localStorage.getItem('token')) {
     window.location.href = '/';
     return null;
@@ -85,7 +91,7 @@ export default function UserProfilePage() {
       setActivityLogs(response.data || []);
     } catch (error: any) {
       console.error('Failed to fetch activity logs:', error.response?.data || error.message);
-      setActivityLogs([]); // Set empty array on error
+      setActivityLogs([]); 
     } finally {
       setLoadingActivity(false);
     }
@@ -104,7 +110,6 @@ export default function UserProfilePage() {
       setMessage({ type: 'success', text: 'Profil berhasil diperbarui!' });
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
       
-      // Refresh activity logs after profile update
       setTimeout(() => {
         fetchActivityLogs();
       }, 500);
@@ -210,8 +215,18 @@ export default function UserProfilePage() {
                 </div>
                 <div className="p-6">
                   <div className="bg-gradient-to-b from-[#172e5f] to-[#0f172a] rounded-2xl p-6 text-center text-white aspect-[3/4] flex flex-col justify-between border-b-[10px] border-orange-500 shadow-xl relative overflow-hidden">
-                      <div className="bg-white w-32 h-32 mx-auto rounded-xl flex items-center justify-center border-4 border-white/10 shadow-inner">
-                          <FaQrcode size={80} className="text-[#172e5f]" />
+                      <div className="bg-white w-36 h-36 mx-auto rounded-xl flex items-center justify-center border-4 border-white/10 shadow-inner p-2">
+                          {/* REPLACED: Static Icon with QRCodeSVG component */}
+                          {userData ? (
+                            <QRCodeSVG 
+                              value={qrValue} 
+                              size={120} 
+                              level="H" 
+                              className="text-[#172e5f]" 
+                            />
+                          ) : (
+                            <div className="animate-pulse bg-gray-100 w-full h-full rounded-md" />
+                          )}
                       </div>
                       <div className="relative z-10">
                           <h3 className="font-bold uppercase tracking-wider text-sm truncate">{userData?.name}</h3>
@@ -228,7 +243,7 @@ export default function UserProfilePage() {
           {/* SECOND ROW: PASSWORD CHANGE & ACTIVITY LOG */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
             
-            {/* LEFT: PENGATURAN KEAMANAN (Password Change) */}
+            {/* LEFT: PENGATURAN KEAMANAN */}
             <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="bg-[#172e5f] p-4 text-white text-xs font-bold flex items-center gap-2">
                 <FaUser /> PENGATURAN KEAMANAN
@@ -282,7 +297,7 @@ export default function UserProfilePage() {
               </div>
             </div>
 
-            {/* RIGHT: LOG AKTIVITAS AKUN (Activity Log) */}
+            {/* RIGHT: LOG AKTIVITAS AKUN */}
             <div className="sticky top-8">
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="bg-[#172e5f] p-4 text-white text-xs font-bold flex items-center gap-2">

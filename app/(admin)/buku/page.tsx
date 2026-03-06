@@ -1,7 +1,13 @@
 "use client";
 
+// guide untuk attala:
+// 1. dibawah import axios 
+// 2. dibawah pageX, dimana x itu bisa buku, users, ...
+// 3. dibawah useEffect 
+
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useRouter } from "next/navigation";
 import { 
   FaPlus, FaSearch, FaEdit, FaTrash, FaBook, 
   FaList, FaTimes, FaSave
@@ -28,6 +34,8 @@ const categoryPrefixes: Record<string, string> = {
 };
 
 export default function BukuPage() {
+  const router = useRouter();
+
   const [books, setBooks] = useState<Book[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -66,6 +74,14 @@ export default function BukuPage() {
   };
 
   useEffect(() => {
+        const adminToken = localStorage.getItem("admin_token");
+  const role = localStorage.getItem("role");
+
+  // LOOPHOLE FIX: If no token or not admin, redirect to login immediately
+  if (!adminToken || role !== 'admin') {
+    router.push('/admin-login');
+    return;
+  }
     fetchBooks();
   }, []);
 

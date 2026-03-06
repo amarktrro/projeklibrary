@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useRouter } from "next/navigation";
 import { 
   FaUsers, 
   FaUserPlus, 
@@ -33,6 +34,8 @@ interface Notification {
 }
 
 export default function KelolaUserPage() {
+const router = useRouter();
+
   const [users, setUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProdi, setSelectedProdi] = useState("Semua Prodi");
@@ -77,6 +80,15 @@ export default function KelolaUserPage() {
   };
 
   useEffect(() => {
+    
+    const adminToken = localStorage.getItem("admin_token");
+  const role = localStorage.getItem("role");
+
+  // LOOPHOLE FIX: If no token or not admin, redirect to login immediately
+  if (!adminToken || role !== 'admin') {
+    router.push('/admin-login');
+    return;
+  }
     fetchUsers();
   }, []);
 

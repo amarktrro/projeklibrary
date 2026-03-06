@@ -1,38 +1,69 @@
 "use client";
 
-import { User, Lock, Info, LogIn, Mail, Instagram } from 'lucide-react';
+import { User, Lock, Info, LogIn, Mail, Instagram, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const [loginRole, setLoginRole] = useState("Admin/Petugas");
+  
+  // New States for Login
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Logic to redirect back to the User Login page
   useEffect(() => {
     if (loginRole === "Anggota/Mahasiswa") {
-      // Redirects to the root app folder where User Login lives
       router.push("/"); 
     }
+
   }, [loginRole, router]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Redirects to the Admin Dashboard
-    router.push('/dashboard'); 
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await axios.post('http://127.0.0.1:8000/api/admin/login', {
+        username,
+        password
+      }, {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+
+      // Save admin token and info
+      localStorage.setItem('admin_token', response.data.token);
+      localStorage.setItem('admin_username', response.data.admin.username);
+      localStorage.setItem('role', 'admin');
+
+      // Success! Redirect to Admin Dashboard
+      router.push('/dashboard'); 
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        setError('Username atau Password salah!');
+      } else {
+        setError('Gagal terhubung ke server. Pastikan Backend aktif.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#172e5f] to-[#7c2d12] flex items-center justify-center p-4 font-sans">
-      
       <div className="flex flex-col md:flex-row gap-8 items-center max-w-5xl w-full">
         
-        {/* --- Login Card --- */}
         <div className="bg-[#172e5f]/60 backdrop-blur-md p-10 rounded-2xl w-full max-w-md shadow-2xl border border-white/5">
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               <div className="relative w-16 h-16">
-                 {/* Logo SVG */}
                  <svg viewBox="0 0 24 24" className="fill-white" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 3L1 9L12 15L21 10.09V17H23V9M5 13.18V17.18L12 21L19 17.18V13.18L12 17L5 13.18Z" />
                  </svg>
@@ -40,10 +71,17 @@ export default function AdminLoginPage() {
               </div>
             </div>
             <h1 className="text-white text-3xl font-bold tracking-wider uppercase">SIMPES</h1>
-            <p className="text-gray-300 text-[10px] mt-1">Jurusan Teknik Informatika dan Komputer</p>
+            <p className="text-gray-300 text-[10px] mt-1">ADMIN LOGIN</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
+            {/* Error Message Display */}
+            {error && (
+              <div className="bg-red-500/20 border border-red-500 text-red-200 text-xs p-3 rounded-lg text-center font-medium">
+                {error}
+              </div>
+            )}
+
             <div className="space-y-1.5">
               <label className="text-white text-xs font-medium flex items-center gap-2">
                 <User size={14} /> Username
@@ -51,6 +89,8 @@ export default function AdminLoginPage() {
               <input 
                 required 
                 type="text" 
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 placeholder="Masukkan Username" 
                 className="w-full bg-[#334155]/80 border border-white/10 rounded-lg py-3 px-4 text-sm text-white placeholder:text-gray-400 focus:ring-2 focus:ring-orange-500 outline-none transition-all" 
               />
@@ -63,6 +103,8 @@ export default function AdminLoginPage() {
               <input 
                 required 
                 type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Masukkan Password" 
                 className="w-full bg-[#334155]/80 border border-white/10 rounded-lg py-3 px-4 text-sm text-white placeholder:text-gray-400 focus:ring-2 focus:ring-orange-500 outline-none transition-all" 
               />
@@ -84,9 +126,11 @@ export default function AdminLoginPage() {
 
             <button 
               type="submit" 
-              className="w-full bg-[#ff4d2d] hover:bg-[#e63e1f] text-white py-3.5 rounded-lg font-bold text-sm shadow-lg transition-colors flex items-center justify-center gap-2"
+              disabled={loading}
+              className="w-full bg-[#ff4d2d] hover:bg-[#e63e1f] disabled:opacity-50 text-white py-3.5 rounded-lg font-bold text-sm shadow-lg transition-colors flex items-center justify-center gap-2"
             >
-              <LogIn size={18} /> Login
+              {loading ? <Loader2 className="animate-spin" size={18} /> : <LogIn size={18} />}
+              {loading ? 'Sedang Masuk...' : 'Login'}
             </button>
           </form>
 
@@ -95,23 +139,20 @@ export default function AdminLoginPage() {
           </p>
         </div>
 
-        {/* --- Info Card (Right Side) --- */}
+        {/* --- Info Card --- */}
         <div className="bg-[#ffffff]/10 backdrop-blur-md border border-white/10 p-10 rounded-2xl w-full max-w-sm text-white hidden md:block">
           <div className="text-center mb-6">
             <div className="bg-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-4">
               <Info size={24} className="text-[#172e5f]" />
             </div>
-            <h2 className="text-xl font-bold">Informasi Perpustakaan</h2>
+            <h2 className="text-xl font-bold">Panel Admin</h2>
+            <p className="text-xs text-gray-300 mt-2">Gunakan akun terdaftar untuk mengelola sirkulasi buku dan data anggota.</p>
           </div>
           
-          <div className="space-y-4">
+          <div className="space-y-4 pt-4 border-t border-white/10">
             <div className="flex items-center justify-center gap-3 text-sm">
               <Mail size={16} className="text-orange-500" />
-              <span className="text-gray-200">perpustakaanjtikunm@gmail.com</span>
-            </div>
-            <div className="flex items-center justify-center gap-3 text-sm">
-              <Instagram size={16} className="text-orange-500" />
-              <span className="text-gray-200">@pustaka_jtik</span>
+              <span className="text-gray-200 text-xs">admin_support@jtik.unm</span>
             </div>
           </div>
         </div>
