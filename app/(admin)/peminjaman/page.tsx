@@ -5,8 +5,10 @@ import {
   FaExclamationTriangle, FaHandshake, FaSync, FaHistory
 } from "react-icons/fa";
 import axios from "axios";
+import { useRouter } from "next/navigation";
 
 export default function AdminPeminjaman() {
+  const router = useRouter();
   const [activeBorrows, setActiveBorrows] = useState<any[]>([]);
   const [borrowHistory, setBorrowHistory] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -54,6 +56,15 @@ export default function AdminPeminjaman() {
   }, []);
 
   useEffect(() => {
+    const adminToken = localStorage.getItem("admin_token");
+  const role = localStorage.getItem("role");
+
+  // LOOPHOLE FIX: If no token or not admin, redirect to login immediately
+  if (!adminToken || role !== 'admin') {
+    router.push('/admin-login');
+    return;
+  }
+
     loadData();
   }, [loadData]);
 

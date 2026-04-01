@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useRouter } from "next/navigation";
 import { 
   FaMoneyBillWave, 
   FaExclamationTriangle, 
@@ -16,6 +17,7 @@ import {
 } from "react-icons/fa";
 
 export default function DendaPage() {
+  const router = useRouter();
   const [filterStatus, setFilterStatus] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDenda, setSelectedDenda] = useState<any>(null);
@@ -54,7 +56,17 @@ export default function DendaPage() {
   };
 
   useEffect(() => {
+    const adminToken = localStorage.getItem("admin_token");
+  const role = localStorage.getItem("role");
+
+  // LOOPHOLE FIX: If no token or not admin, redirect to login immediately
+  if (!adminToken || role !== 'admin') {
+    router.push('/admin-login');
+    return;
+  }
     fetchDenda();
+  
+  
   }, []);
 
   const formatCurrency = (amount: number) =>
