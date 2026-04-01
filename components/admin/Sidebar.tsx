@@ -18,8 +18,6 @@ export default function Sidebar() {
     { name: "Peminjaman", icon: FaClipboardList, path: "/peminjaman" },
     { name: "Kelola Denda", icon: FaWallet, path: "/denda" },
     { name: "Buku Tamu & Scan QR", icon: FaQrcode, path: "/guest-book" },
-    { name: "Laporan Keuangan", icon: FaChartBar, path: "/laporan" },
-    { name: "Laporan Lainnya", icon: FaFileAlt, path: "/laporan-lainnya" },
     { name: "Informasi", icon: FaInfoCircle, path: "/informasi" },
   ];
 
